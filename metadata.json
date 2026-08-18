@@ -1,0 +1,7 @@
+{
+  "name": "Keepr",
+  "description": "Minimal, AI-powered purchase intelligence, receipt scanner, warranty tracker, and return deadline manager.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
