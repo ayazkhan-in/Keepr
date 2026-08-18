@@ -12,15 +12,18 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const PRIMARY_GEMINI_MODEL = 'gemini-3.6-flash';
+const PRIMARY_GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
 
 // Lazy initialize GoogleGenAI with aistudio-build user agent
 let aiClient: GoogleGenAI | null = null;
+let currentKey: string | null = null;
+
 function getAI(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
   if (!apiKey) return null;
-  if (!aiClient) {
+  if (!aiClient || currentKey !== apiKey) {
+    currentKey = apiKey;
     aiClient = new GoogleGenAI({
       apiKey: apiKey,
       httpOptions: {
