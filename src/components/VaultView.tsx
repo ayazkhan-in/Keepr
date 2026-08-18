@@ -167,7 +167,7 @@ TAX & COMPLIANCE:
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -227,7 +227,7 @@ TAX & COMPLIANCE:
       </div>
 
       {/* Documents Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredDocs.map((item) => (
           <div
             key={item.id}

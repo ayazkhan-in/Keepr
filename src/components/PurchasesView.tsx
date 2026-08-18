@@ -255,7 +255,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
               Purchase Intelligence Summary
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px] text-[#45464D]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-[12px] text-[#45464D]">
             <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
               <p className="font-semibold text-[#0F172A]">Tax Deductions Identified</p>
               <p className="mt-0.5 text-[#76777D]">
@@ -488,7 +488,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
         </div>
       ) : (
         /* Grid View */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((item) => (
             <div
               key={item.id}

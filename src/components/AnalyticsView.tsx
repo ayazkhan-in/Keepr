@@ -124,7 +124,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -150,7 +150,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Total Assets</span>
@@ -209,7 +209,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {insights.map((ins, idx) => (
             <div
               key={ins.id || idx}
@@ -233,7 +233,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       </section>
 
       {/* Category Breakdown & Assistant Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left (5 cols): Category Breakdown */}
         <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between mb-4">

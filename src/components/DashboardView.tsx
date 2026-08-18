@@ -68,7 +68,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Editorial Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-[#E2E8F0] gap-4">
         <div>
@@ -91,9 +91,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Main Grid: 12 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left Column (8 cols): Action Center + Spending Bar Chart + Recent Ingestion */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
+        <div className="lg:col-span-8 flex flex-col gap-5">
           {/* AI Action Center */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div className="flex items-center gap-2 mb-3.5">
@@ -296,7 +296,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Right Column (4 cols): Capital at Risk + Upcoming Deadlines Timeline */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
+        <div className="lg:col-span-4 flex flex-col gap-5">
           {/* Capital at Risk Widget */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div className="flex items-center justify-between mb-2">

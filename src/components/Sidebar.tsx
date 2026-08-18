@@ -47,12 +47,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="hidden md:flex flex-col bg-[#FFFFFF] border-r border-[#E2E8F0] h-screen w-64 py-4 px-3 shrink-0 z-20 select-none">
+    <aside className="hidden md:flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl h-full w-64 p-3.5 shrink-0 z-20 select-none shadow-sm overflow-y-auto">
       {/* Brand Header */}
       <div className="px-3 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#0F172A] flex items-center justify-center shrink-0 shadow-xs">
-            <Box className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 shadow-xs border border-[#E2E8F0] bg-white flex items-center justify-center">
+            <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="font-semibold text-base text-[#0F172A] tracking-tight leading-none flex items-center gap-1.5">

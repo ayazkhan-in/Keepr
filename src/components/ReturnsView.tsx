@@ -33,7 +33,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
   const totalAtRisk = activeReturns.reduce((acc, p) => acc + p.price, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
@@ -45,7 +45,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">

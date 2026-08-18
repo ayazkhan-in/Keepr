@@ -91,7 +91,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>

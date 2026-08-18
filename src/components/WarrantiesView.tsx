@@ -45,7 +45,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
   ];
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
@@ -61,7 +61,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
         <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
           Action Required
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Alert Card 1: Return Window Closing */}
           <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl flex flex-col justify-between hover:border-[#94A3B8] transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div className="flex justify-between items-start mb-4">
@@ -264,7 +264,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
               <Calendar className="w-3.5 h-3.5 text-[#76777D]" />
               <span>Upcoming Milestones</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-[12px]">
               <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
                 <span className="font-mono-code text-[10px] text-[#DC2626] font-semibold">NOV 2, 2023</span>
                 <p className="font-medium text-[#0F172A] mt-0.5">Sony A7IV Limited 1-Year Expiry</p>

@@ -98,8 +98,11 @@ export function App() {
   ).length;
 
   return (
-    <div className="flex h-screen w-full bg-[#F9F9FB] text-[#1A1C1D] overflow-hidden font-sans">
-      {/* Left Sidebar */}
+    <div
+      className="flex h-screen w-full text-[#1A1C1D] overflow-hidden font-sans p-3 md:p-3.5 gap-3.5 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      {/* Floating Left Sidebar */}
       <Sidebar
         activeView={activeView}
         setActiveView={setActiveView}
@@ -107,8 +110,8 @@ export function App() {
         openScanner={() => setIsScannerOpen(true)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      {/* Main Content Area (Floating Panel) */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] shadow-sm">
         {/* Top Bar */}
         <TopBar
           searchQuery={searchQuery}
@@ -123,7 +126,7 @@ export function App() {
         />
 
         {/* Viewport Screen with smooth scrolling */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
           {activeView === 'dashboard' && (
             <DashboardView
               purchases={purchases}

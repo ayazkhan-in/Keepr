@@ -29,7 +29,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="bg-[#FFFFFF] border-b border-[#E2E8F0] flex justify-between items-center w-full px-4 md:px-8 h-16 shrink-0 z-30 sticky top-0">
+    <header className="bg-[#FFFFFF] border-b border-[#E2E8F0] flex justify-between items-center w-full px-4 md:px-6 h-16 shrink-0 z-30 sticky top-0 rounded-t-2xl">
       {/* Left side: Mobile Toggle / Search Input */}
       <div className="flex items-center gap-4 flex-1">
         {/* Mobile menu trigger */}
@@ -42,6 +42,9 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* Mobile Brand */}
         <div className="md:hidden flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0 border border-[#E2E8F0] bg-white flex items-center justify-center">
+            <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
+          </div>
           <span className="font-semibold text-base text-[#0F172A] tracking-tight">Keepr</span>
           <span className="text-[10px] font-mono-code bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0]">
             AI
