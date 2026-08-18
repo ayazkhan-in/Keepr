@@ -218,6 +218,7 @@ export function App() {
         setActiveView={setActiveView}
         riskCount={riskCount}
         openScanner={() => setIsScannerOpen(true)}
+        openSettings={() => setIsSettingsOpen(true)}
         openAuthModal={() => setIsAuthModalOpen(true)}
         onNavigateToLanding={() => navigateTo('landing')}
       />

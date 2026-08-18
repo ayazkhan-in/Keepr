@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles, User as UserIcon, LogOut, LogIn, ExternalLink } from 'lucide-react';
+import { Search, Bell, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, Bot } from 'lucide-react';
 import { ActiveView } from '../types';
-import { useAuth } from '../context/AuthContext';
 
 interface TopBarProps {
   searchQuery: string;
@@ -33,10 +32,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   openAuthModal,
   onNavigateToLanding,
 }) => {
-  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
     <motion.header
@@ -86,14 +83,18 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Right side: Actions */}
-      <div className="flex items-center gap-2.5">
-        {/* Firebase Firestore Status Pill */}
-        <div 
-          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-[11px] font-mono-code text-[#475569]"
-          title={dbConnected ? "Firebase Firestore connected & listening in real-time" : "Firebase operating in local fallback mode"}
-        >
-          <span className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-          <span>{dbConnected ? 'Firestore Live' : 'Offline Cache'}</span>
+      <div className="flex items-center gap-3">
+        {/* Firebase Firestore Status Green Dot with Hover Tooltip */}
+        <div className="relative group flex items-center justify-center cursor-pointer p-1.5">
+          <span
+            className={`w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125 ${
+              dbConnected ? 'bg-emerald-500' : 'bg-amber-500'
+            }`}
+          />
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 bg-[#0F172A] text-white text-[11px] font-mono-code rounded-lg whitespace-nowrap shadow-xl pointer-events-none z-50 animate-in fade-in zoom-in-95 duration-150">
+            <span className={`w-1.5 h-1.5 rounded-full ${dbConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            <span>{dbConnected ? 'Firestore Connected' : 'Offline Cache'}</span>
+          </div>
         </div>
 
         {/* Ask Keepr AI Assistant */}
@@ -102,7 +103,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="px-3 py-2 bg-[#F9F9FB] border border-[#E2E8F0] hover:border-[#0F172A] text-[#0F172A] rounded-xl text-[13px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
           title="Ask Keepr AI Assistant"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#0F172A]" />
+          <Bot className="w-3.5 h-3.5 text-[#0F172A]" />
           <span className="hidden sm:inline">Ask Keepr AI</span>
         </button>
 
@@ -201,95 +202,6 @@ export const TopBar: React.FC<TopBarProps> = ({
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Settings button */}
-        <button
-          onClick={openSettings}
-          className="p-2 text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-xl transition-colors hidden sm:block cursor-pointer"
-          aria-label="Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
-        {/* User profile avatar & Authentication */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || 'User'}
-                className="w-8 h-8 rounded-full border border-slate-300 object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[12px] font-semibold tracking-wider border border-slate-300">
-                {user?.displayName
-                  ? user.displayName.slice(0, 2).toUpperCase()
-                  : user?.email
-                  ? user.email.slice(0, 2).toUpperCase()
-                  : 'KP'}
-              </div>
-            )}
-          </button>
-
-          {/* User Dropdown Menu */}
-          <AnimatePresence>
-            {showUserMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: -8, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, scale: 0.96, y: -8, filter: 'blur(8px)' }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
-              >
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-xs font-semibold text-slate-900 truncate">
-                    {user?.displayName || 'Active Account'}
-                  </p>
-                  <p className="text-[11px] text-slate-500 truncate">{user?.email || 'Protected Enclave'}</p>
-                </div>
-
-                {onNavigateToLanding && (
-                  <button
-                    onClick={() => {
-                      onNavigateToLanding();
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Landing Overview</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => {
-                    openSettings();
-                    setShowUserMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <Settings className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Account Settings</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    logout();
-                    setShowUserMenu(false);
-                    if (onNavigateToLanding) onNavigateToLanding();
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5 text-red-500" />
-                  <span>Sign Out</span>
-                </button>
               </motion.div>
             )}
           </AnimatePresence>

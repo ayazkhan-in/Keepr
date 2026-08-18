@@ -23,6 +23,7 @@ interface SidebarProps {
   setActiveView: (view: ActiveView) => void;
   riskCount: number;
   openScanner: () => void;
+  openSettings?: () => void;
   openAuthModal?: () => void;
   onNavigateToLanding?: () => void;
 }
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveView,
   riskCount,
   openScanner,
+  openSettings,
   openAuthModal,
   onNavigateToLanding,
 }) => {
@@ -142,17 +144,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Landing Overview</span>
           </button>
         )}
-        <button
-          onClick={() => setActiveView('settings')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-            activeView === 'settings'
-              ? 'bg-[#F1F5F9] text-[#0F172A]'
-              : 'text-[#45464D] hover:text-[#0F172A] hover:bg-[#F9F9FB]'
-          }`}
-        >
-          <Settings className="w-4 h-4 text-[#76777D]" />
-          <span>Settings</span>
-        </button>
         <a
           href="https://ai.google.dev"
           target="_blank"
@@ -192,16 +183,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            logout();
-            if (onNavigateToLanding) onNavigateToLanding();
-          }}
-          className="p-1.5 text-[#76777D] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-          title="Sign Out"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => {
+              if (openSettings) {
+                openSettings();
+              } else {
+                setActiveView('settings');
+              }
+            }}
+            className="p-1.5 text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => {
+              logout();
+              if (onNavigateToLanding) onNavigateToLanding();
+            }}
+            className="p-1.5 text-[#76777D] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </motion.aside>
   );
