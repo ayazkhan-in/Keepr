@@ -9,10 +9,10 @@ import {
   Calendar,
   Settings,
   HelpCircle,
-  Box,
   Sparkles,
   LogIn,
   LogOut,
+  Globe,
 } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +23,7 @@ interface SidebarProps {
   riskCount: number;
   openScanner: () => void;
   openAuthModal?: () => void;
+  onNavigateToLanding?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   riskCount,
   openScanner,
   openAuthModal,
+  onNavigateToLanding,
 }) => {
   const { user, logout } = useAuth();
   const navItems = [
@@ -55,7 +57,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="hidden md:flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl h-full w-64 p-3.5 shrink-0 z-20 select-none shadow-sm overflow-y-auto">
       {/* Brand Header */}
-      <div className="px-3 mb-6 flex items-center justify-between">
+      <div
+        className={`px-3 mb-6 flex items-center justify-between ${onNavigateToLanding ? 'cursor-pointer hover:opacity-85 transition-opacity' : ''}`}
+        onClick={onNavigateToLanding}
+        title={onNavigateToLanding ? 'Return to Landing Page' : undefined}
+      >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 shadow-xs border border-[#E2E8F0] bg-white flex items-center justify-center">
             <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
@@ -124,6 +130,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer Navigation */}
       <div className="pt-3 border-t border-[#E2E8F0] space-y-1">
+        {onNavigateToLanding && (
+          <button
+            onClick={onNavigateToLanding}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium text-[#45464D] hover:text-[#0F172A] hover:bg-[#F9F9FB] transition-all cursor-pointer"
+          >
+            <Globe className="w-4 h-4 text-[#76777D]" />
+            <span>Landing Overview</span>
+          </button>
+        )}
         <button
           onClick={() => setActiveView('settings')}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
@@ -148,41 +163,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User profile capsule */}
       <div className="mt-3 pt-3 border-t border-[#E2E8F0] flex items-center justify-between px-1">
-        {user ? (
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || 'User'}
-                className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
-                {user.displayName
-                  ? user.displayName.slice(0, 2).toUpperCase()
-                  : user.email
-                  ? user.email.slice(0, 2).toUpperCase()
-                  : 'U'}
-              </div>
-            )}
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[12px] font-medium text-[#0F172A] leading-none truncate">
-                {user.displayName || 'User Account'}
-              </span>
-              <span className="text-[10px] font-mono-code text-[#76777D] mt-0.5 truncate">
-                {user.email}
-              </span>
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user.displayName || 'User'}
+              className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
+              {user?.displayName
+                ? user.displayName.slice(0, 2).toUpperCase()
+                : user?.email
+                ? user.email.slice(0, 2).toUpperCase()
+                : 'KP'}
             </div>
+          )}
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-[12px] font-medium text-[#0F172A] leading-none truncate">
+              {user?.displayName || 'Active Account'}
+            </span>
+            <span className="text-[10px] font-mono-code text-[#76777D] mt-0.5 truncate">
+              {user?.email || 'Protected Enclave'}
+            </span>
           </div>
-        ) : (
-          <button
-            onClick={openAuthModal}
-            className="w-full py-1.5 px-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] rounded-xl text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In to Sync</span>
-          </button>
-        )}
+        </div>
+
+        <button
+          onClick={() => {
+            logout();
+            if (onNavigateToLanding) onNavigateToLanding();
+          }}
+          className="p-1.5 text-[#76777D] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+          title="Sign Out"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </aside>
   );

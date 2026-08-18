@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles, User as UserIcon, LogOut, LogIn } from 'lucide-react';
+import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles, User as UserIcon, LogOut, LogIn, ExternalLink } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,6 +15,7 @@ interface TopBarProps {
   riskCount: number;
   dbConnected?: boolean;
   openAuthModal: () => void;
+  onNavigateToLanding?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -29,6 +30,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   riskCount,
   dbConnected = true,
   openAuthModal,
+  onNavigateToLanding,
 }) => {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,7 +50,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Mobile Brand */}
-        <div className="md:hidden flex items-center gap-2">
+        <div
+          className={`md:hidden flex items-center gap-2 ${onNavigateToLanding ? 'cursor-pointer' : ''}`}
+          onClick={onNavigateToLanding}
+        >
           <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0 border border-[#E2E8F0] bg-white flex items-center justify-center">
             <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
           </div>
@@ -200,45 +205,57 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* User profile avatar & Authentication */}
-        {user ? (
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || 'User'}
-                  className="w-8 h-8 rounded-full border border-slate-300 object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[12px] font-semibold tracking-wider border border-slate-300">
-                  {user.displayName
-                    ? user.displayName.slice(0, 2).toUpperCase()
-                    : user.email
-                    ? user.email.slice(0, 2).toUpperCase()
-                    : 'U'}
-                </div>
-              )}
-            </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="w-8 h-8 rounded-full border border-slate-300 object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[12px] font-semibold tracking-wider border border-slate-300">
+                {user?.displayName
+                  ? user.displayName.slice(0, 2).toUpperCase()
+                  : user?.email
+                  ? user.email.slice(0, 2).toUpperCase()
+                  : 'KP'}
+              </div>
+            )}
+          </button>
 
-            {/* User Dropdown Menu */}
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-1">
+          {/* User Dropdown Menu */}
+          {showUserMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-1">
                 <div className="px-4 py-2 border-b border-slate-100">
                   <p className="text-xs font-semibold text-slate-900 truncate">
-                    {user.displayName || 'Account User'}
+                    {user?.displayName || 'Active Account'}
                   </p>
-                  <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{user?.email || 'Protected Enclave'}</p>
                 </div>
+
+                {onNavigateToLanding && (
+                  <button
+                    onClick={() => {
+                      onNavigateToLanding();
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Landing Overview</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
                     openSettings();
                     setShowUserMenu(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                 >
                   <Settings className="w-3.5 h-3.5 text-slate-400" />
                   <span>Account Settings</span>
@@ -248,8 +265,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                   onClick={() => {
                     logout();
                     setShowUserMenu(false);
+                    if (onNavigateToLanding) onNavigateToLanding();
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5 text-red-500" />
                   <span>Sign Out</span>
@@ -257,15 +275,6 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
             )}
           </div>
-        ) : (
-          <button
-            onClick={openAuthModal}
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In</span>
-          </button>
-        )}
       </div>
 
       {/* Mobile Drawer */}
