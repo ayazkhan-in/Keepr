@@ -14,6 +14,7 @@ import {
   LogIn,
   LogOut,
   Globe,
+  User as UserIcon,
 } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -158,21 +159,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* User profile capsule */}
       <div className="mt-3 pt-3 border-t border-[#E2E8F0] flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user.displayName || 'User'}
-              className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
-              {user?.displayName
-                ? user.displayName.slice(0, 2).toUpperCase()
-                : user?.email
-                ? user.email.slice(0, 2).toUpperCase()
-                : 'KP'}
-            </div>
-          )}
+          <div className="w-8 h-8 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-2xs overflow-hidden border border-[#E2E8F0] relative">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : user?.displayName ? (
+              <span>{user.displayName.slice(0, 2).toUpperCase()}</span>
+            ) : (
+              <UserIcon className="w-4 h-4 text-white/90" />
+            )}
+          </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[12px] font-medium text-[#0F172A] leading-none truncate">
               {user?.displayName || 'Active Account'}
