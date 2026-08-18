@@ -10,6 +10,7 @@ import {
   Sparkles,
   ArrowRight,
   X,
+  Loader2,
 } from 'lucide-react';
 import { PurchaseItem, ActiveView } from '../types';
 
@@ -31,12 +32,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   openScanner,
 }) => {
   const [query, setQuery] = useState('');
+  const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
+  const [isSearchingSemantic, setIsSearchingSemantic] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        // Toggle palette
       } else if (e.key === 'Escape' && isOpen) {
         onClose();
       }
@@ -45,9 +47,40 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Trigger semantic search when query looks like a natural language prompt
+  useEffect(() => {
+    if (!query || query.trim().length < 3) {
+      setSemanticResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if (query.includes(' ') || query.length > 8) {
+        setIsSearchingSemantic(true);
+        try {
+          const res = await fetch('/api/gemini/semantic-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, purchases }),
+          });
+          const data = await res.json();
+          if (data.success && data.matches) {
+            setSemanticResults(data.matches);
+          }
+        } catch (e) {
+          console.warn('Semantic search error:', e);
+        } finally {
+          setIsSearchingSemantic(false);
+        }
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [query, purchases]);
+
   if (!isOpen) return null;
 
-  const matchedPurchases = query
+  const basicMatches = query
     ? purchases.filter((p) =>
         p.name.toLowerCase().includes(query.toLowerCase()) ||
         p.vendor.toLowerCase().includes(query.toLowerCase()) ||
@@ -115,15 +148,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       <div className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden animate-in fade-in">
         {/* Search Input */}
         <div className="p-3.5 border-b border-[#E2E8F0] flex items-center gap-3">
-          <Search className="w-4 h-4 text-[#94A3B8]" />
+          {isSearchingSemantic ? (
+            <Loader2 className="w-4 h-4 text-[#0F172A] animate-spin" />
+          ) : (
+            <Search className="w-4 h-4 text-[#94A3B8]" />
+          )}
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a purchase, vendor, or command..."
+            placeholder="Type a query (e.g. 'workstation electronics' or 'expiring warranties')..."
             autoFocus
             className="flex-1 text-[13px] text-[#0F172A] bg-transparent focus:outline-none placeholder:text-[#94A3B8]"
           />
+          {semanticResults && (
+            <span className="flex items-center gap-1 font-mono-code text-[10px] text-[#0F172A] bg-[#F1F5F9] px-2 py-0.5 rounded-md border border-[#E2E8F0]">
+              <Sparkles className="w-3 h-3" /> AI Matched
+            </span>
+          )}
           <kbd className="font-mono-code text-[10px] text-[#76777D] bg-[#F1F5F9] px-2 py-0.5 rounded-md border border-[#E2E8F0]">
             ESC
           </kbd>
@@ -131,55 +173,93 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2.5 divide-y divide-[#F1F5F9] text-[13px]">
-          {/* Quick Actions */}
-          <div className="pb-2">
-            <span className="px-2 py-1 block text-[10px] font-mono-code uppercase text-[#76777D] font-semibold">
-              Navigation & Actions
-            </span>
-            {navActions.map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={idx}
-                  onClick={item.action}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F9F9FB] text-left text-[#0F172A] transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="w-4 h-4 text-[#76777D] group-hover:text-[#0F172A]" />
-                    <span>{item.label}</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#0F172A]" />
-                </button>
-              );
-            })}
-          </div>
+          {/* AI Semantic Search Results if available */}
+          {semanticResults && semanticResults.length > 0 && (
+            <div className="pb-2">
+              <span className="px-2 py-1 flex items-center gap-1 text-[10px] font-mono-code uppercase text-[#0F172A] font-semibold">
+                <Sparkles className="w-3 h-3" />
+                Gemini Semantic Matches ({semanticResults.length})
+              </span>
+              {semanticResults.map((match) => {
+                const item = purchases.find((p) => p.id === match.id);
+                if (!item) return null;
+                return (
+                  <button
+                    key={match.id}
+                    onClick={() => {
+                      onClose();
+                      onSelectPurchase(item);
+                    }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F9F9FB] text-left transition-colors cursor-pointer group"
+                  >
+                    <div>
+                      <p className="font-medium text-[#0F172A]">{item.name}</p>
+                      <p className="text-[11px] text-[#76777D]">
+                        {match.matchReason || `${item.vendor} · $${item.price.toFixed(2)}`}
+                      </p>
+                    </div>
+                    <span className="font-mono-code text-[11px] text-[#10B981] font-semibold">
+                      {Math.round((match.relevanceScore || 0.9) * 100)}% Match
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Matched Purchases */}
-          <div className="pt-2">
-            <span className="px-2 py-1 block text-[10px] font-mono-code uppercase text-[#76777D] font-semibold">
-              Purchases ({matchedPurchases.length})
-            </span>
-            {matchedPurchases.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => {
-                  onClose();
-                  onSelectPurchase(p);
-                }}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F9F9FB] text-left transition-colors cursor-pointer group"
-              >
-                <div>
-                  <p className="font-medium text-[#0F172A]">{p.name}</p>
-                  <p className="text-[11px] text-[#76777D]">
-                    {p.vendor} · ${p.price.toFixed(2)}
-                  </p>
-                </div>
-                <span className="font-mono-code text-[11px] text-[#76777D]">
-                  {p.purchaseDate}
-                </span>
-              </button>
-            ))}
-          </div>
+          {/* Quick Actions */}
+          {!query && (
+            <div className="pb-2">
+              <span className="px-2 py-1 block text-[10px] font-mono-code uppercase text-[#76777D] font-semibold">
+                Navigation & Actions
+              </span>
+              {navActions.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={item.action}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F9F9FB] text-left text-[#0F172A] transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="w-4 h-4 text-[#76777D] group-hover:text-[#0F172A]" />
+                      <span>{item.label}</span>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#CBD5E1] group-hover:text-[#0F172A]" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Regular Matches */}
+          {(!semanticResults || semanticResults.length === 0) && (
+            <div className="pt-2">
+              <span className="px-2 py-1 block text-[10px] font-mono-code uppercase text-[#76777D] font-semibold">
+                Purchases ({basicMatches.length})
+              </span>
+              {basicMatches.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    onClose();
+                    onSelectPurchase(p);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F9F9FB] text-left transition-colors cursor-pointer group"
+                >
+                  <div>
+                    <p className="font-medium text-[#0F172A]">{p.name}</p>
+                    <p className="text-[11px] text-[#76777D]">
+                      {p.vendor} · ${p.price.toFixed(2)}
+                    </p>
+                  </div>
+                  <span className="font-mono-code text-[11px] text-[#76777D]">
+                    {p.purchaseDate}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

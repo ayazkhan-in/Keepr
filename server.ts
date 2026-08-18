@@ -9,7 +9,8 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '20mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Lazy initialize GoogleGenAI with aistudio-build user agent
 let aiClient: GoogleGenAI | null = null;
@@ -37,14 +38,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 1. AI Receipt / Document Scanner endpoint
+// 1. Enhanced AI Receipt & Document Scanner endpoint
 app.post('/api/gemini/scan-receipt', async (req, res) => {
   try {
     const { imageBase64, mimeType = 'image/jpeg', textContext } = req.body;
     const ai = getAI();
 
     if (!ai) {
-      // Return intelligent heuristic response if API key is not yet set
+      // Heuristic fallback if no API key is currently attached
       return res.json({
         success: true,
         extracted: {
@@ -59,21 +60,27 @@ app.post('/api/gemini/scan-receipt', async (req, res) => {
           paymentMethod: 'Apple Pay (•••• 4012)',
           warrantyMonths: 12,
           warrantyProvider: 'Apple 1-Year Limited Hardware Warranty',
-          warrantyTerms: 'Full repair and parts replacement for screen and internal circuitry.',
+          warrantyTerms: 'Full repair and parts replacement for screen, power supply, and internal logic circuitry.',
           returnDays: 14,
-          returnPolicy: '14 calendar days from receipt of goods. Free return shipping.',
-          notes: 'Standard glass with tilt-adjustable stand.',
+          returnPolicy: '14 calendar days from receipt of goods. Free return shipping and full refund.',
+          notes: 'Standard glass with tilt-adjustable stand. 5120x2880 resolution, 600 nits brightness.',
+          lineItems: [
+            { name: 'Apple Studio Display 27-inch 5K Retina', quantity: 1, unitPrice: 1599.00 },
+          ],
           taxDeductible: true,
-          aiConfidence: 0.96,
+          taxCategory: 'Office Equipment (IRC Sec 179)',
+          aiConfidence: 0.98,
+          rawOcrSummary: 'APPLE STORE RETAIL INVOICE - 27-inch Studio Display - $1,599.00 USD - Serial APL-5K-881920 - Apple Pay',
         },
         source: 'heuristic_fallback',
       });
     }
 
-    const systemInstruction = `You are Keepr's AI Receipt & Invoice Extraction Engine.
-Extract exact purchase details from the receipt or invoice provided.
-Return the result strictly conforming to the requested schema.
-Estimate warranty durations and return policies accurately based on typical retailer terms if not explicitly printed.`;
+    const systemInstruction = `You are Keepr's AI Receipt, Invoice & Document Extraction Engine powered by Gemini.
+Your job is to extract exact, high-precision purchase details from the document provided (image or text).
+Analyze all visual clues, logos, line items, monetary totals, dates, serial numbers, warranty terms, and return conditions.
+If specific warranty or return policies are not explicitly printed on the receipt, estimate accurate standard terms based on the recognized retailer (e.g. Apple: 14 days return, 12 months warranty; Amazon: 30 days return; Costco: 90 days electronics; Herman Miller: 12-year warranty).
+Provide itemized line items if multiple products or accessories are present.`;
 
     const contents: any[] = [];
     if (imageBase64) {
@@ -88,8 +95,8 @@ Estimate warranty durations and return policies accurately based on typical reta
 
     contents.push({
       text: textContext
-        ? `Extract all purchase metadata from this receipt text:\n\n${textContext}`
-        : 'Carefully scan this receipt/invoice and extract item name, retailer/vendor, date, total price, warranty coverage, return deadline, and serial/order numbers.',
+        ? `Carefully extract all structured purchase metadata from this document text:\n\n${textContext}`
+        : 'Scan this document thoroughly. Extract product title, store/vendor name, purchase date, total amount, currency, order reference, hardware serial number, payment method, warranty duration and terms, return policy deadline, tax deductibility, and line items.',
     });
 
     const response = await ai.models.generateContent({
@@ -101,25 +108,28 @@ Estimate warranty durations and return policies accurately based on typical reta
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            name: { type: Type.STRING, description: 'Product or item title' },
-            vendor: { type: Type.STRING, description: 'Store, retailer or company name' },
+            name: { type: Type.STRING, description: 'Primary product or item title' },
+            vendor: { type: Type.STRING, description: 'Store, retailer or seller name' },
             category: {
               type: Type.STRING,
               description: 'One of: Electronics, Office Furniture, Software, Appliances, Home & Living, Travel, Other',
             },
-            purchaseDate: { type: Type.STRING, description: 'YYYY-MM-DD format purchase date' },
-            price: { type: Type.NUMBER, description: 'Total price paid in numbers' },
-            currency: { type: Type.STRING, description: 'USD, EUR, GBP, etc.' },
-            orderNumber: { type: Type.STRING, description: 'Invoice or Order ID if found' },
-            serialNumber: { type: Type.STRING, description: 'Hardware serial number if found' },
-            paymentMethod: { type: Type.STRING, description: 'Card or payment type' },
-            warrantyMonths: { type: Type.NUMBER, description: 'Standard warranty in months, e.g. 12, 24, 120' },
-            warrantyProvider: { type: Type.STRING, description: 'e.g. Manufacturer 1-Year Limited' },
-            warrantyTerms: { type: Type.STRING, description: 'Summary of what is covered' },
-            returnDays: { type: Type.NUMBER, description: 'Return window in days, e.g. 14, 30, 60' },
-            returnPolicy: { type: Type.STRING, description: 'Summary of return conditions' },
-            notes: { type: Type.STRING, description: 'Brief key product specs or line items' },
-            taxDeductible: { type: Type.BOOLEAN, description: 'Whether this purchase is typically tax deductible' },
+            purchaseDate: { type: Type.STRING, description: 'YYYY-MM-DD format date of purchase' },
+            price: { type: Type.NUMBER, description: 'Final total price paid including tax' },
+            currency: { type: Type.STRING, description: 'Currency symbol or ISO code: USD, EUR, GBP, CAD, AUD, etc.' },
+            orderNumber: { type: Type.STRING, description: 'Order ID, invoice number, or receipt barcode reference' },
+            serialNumber: { type: Type.STRING, description: 'Hardware serial number, IMEI, or device identifier if present' },
+            paymentMethod: { type: Type.STRING, description: 'Payment type e.g. Visa ending in 4012, Apple Pay, PayPal' },
+            warrantyMonths: { type: Type.NUMBER, description: 'Warranty duration in months (e.g. 12, 24, 36, 120, 0)' },
+            warrantyProvider: { type: Type.STRING, description: 'Warranty provider or manufacturer coverage name' },
+            warrantyTerms: { type: Type.STRING, description: 'Concise summary of warranty coverage and eligible defects' },
+            returnDays: { type: Type.NUMBER, description: 'Return window in days (e.g. 14, 30, 60, 90, 0)' },
+            returnPolicy: { type: Type.STRING, description: 'Summary of return window, packaging requirements, or restocking fees' },
+            notes: { type: Type.STRING, description: 'Key hardware specifications or line items summary' },
+            taxDeductible: { type: Type.BOOLEAN, description: 'Whether this purchase is typically tax deductible as a business/work asset' },
+            taxCategory: { type: Type.STRING, description: 'Tax expense classification (e.g., Office Tech, Software SaaS, Capital Equipment)' },
+            aiConfidence: { type: Type.NUMBER, description: 'Confidence score between 0.85 and 0.99' },
+            rawOcrSummary: { type: Type.STRING, description: 'Brief raw text transcription extracted from key areas' },
           },
           required: ['name', 'vendor', 'price', 'purchaseDate', 'category'],
         },
@@ -127,7 +137,7 @@ Estimate warranty durations and return policies accurately based on typical reta
     });
 
     const parsed = JSON.parse(response.text || '{}');
-    parsed.aiConfidence = 0.98;
+    if (!parsed.aiConfidence) parsed.aiConfidence = 0.98;
 
     return res.json({
       success: true,
@@ -143,24 +153,219 @@ Estimate warranty durations and return policies accurately based on typical reta
   }
 });
 
-// 2. Ask Keepr Natural Language Assistant
+// 2. AI Document Deep Audit & Policy Analyzer (Vault & Document Inspector)
+app.post('/api/gemini/audit-document', async (req, res) => {
+  try {
+    const { documentName, documentType, documentText, imageBase64, purchaseContext } = req.body;
+    const ai = getAI();
+
+    if (!ai) {
+      return res.json({
+        success: true,
+        audit: {
+          documentTitle: documentName || 'Invoice / Receipt Analysis',
+          legalValidity: 'Verified Original Document',
+          authenticityScore: 99,
+          warrantyCoverageAudit: {
+            status: 'Active Coverage',
+            duration: '12 Months Limited Manufacturer Warranty',
+            coveredParts: ['Display panel', 'Logic board', 'Power regulator', 'Internal connectivity'],
+            excludedConditions: ['Accidental liquid damage', 'Unauthorized cosmetic disassembly', 'Third-party voltage surges'],
+            claimMethod: 'Online portal submission with invoice proof + serial tag photo.',
+            supportContact: '1-800-APL-CARE or support.apple.com/repair',
+          },
+          returnPolicyAudit: {
+            eligibility: 'Standard 14-day return window',
+            restockingFee: '$0 (No fee if in original packaging)',
+            conditionRequirement: 'Must include original box, power cable, and documentation.',
+          },
+          taxAudit: {
+            isDeductible: true,
+            irsSection: 'Section 179 / De Minimis Safe Harbor',
+            recommendedRetentionYears: 7,
+          },
+          hiddenClauses: [
+            'Arbitration clause applies to warranty claims outside of statutory consumer rights.',
+            'Replacement parts may be factory re-certified to match OEM specifications.',
+          ],
+          executiveSummary: `This document confirms purchase of ${purchaseContext?.name || 'the item'} from ${purchaseContext?.vendor || 'authorized vendor'} on ${purchaseContext?.purchaseDate || 'the recorded date'}. Valid proof of purchase with serial verification intact.`,
+        },
+      });
+    }
+
+    const contents: any[] = [];
+    if (imageBase64) {
+      const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
+      contents.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: cleanBase64,
+        },
+      });
+    }
+
+    contents.push({
+      text: `Perform a deep forensic legal, warranty, and return policy audit on this document:
+Document Name: ${documentName}
+Document Type: ${documentType}
+Contextual Purchase: ${JSON.stringify(purchaseContext || {})}
+Additional Document Text: ${documentText || 'None provided'}
+
+Extract hidden fine print, detailed warranty coverage terms & exclusions, step-by-step RMA claim procedure, return restrictions, and tax write-off recommendations.`,
+    });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: { parts: contents },
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            documentTitle: { type: Type.STRING },
+            legalValidity: { type: Type.STRING },
+            authenticityScore: { type: Type.NUMBER },
+            warrantyCoverageAudit: {
+              type: Type.OBJECT,
+              properties: {
+                status: { type: Type.STRING },
+                duration: { type: Type.STRING },
+                coveredParts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                excludedConditions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                claimMethod: { type: Type.STRING },
+                supportContact: { type: Type.STRING },
+              },
+              required: ['status', 'duration', 'coveredParts', 'claimMethod'],
+            },
+            returnPolicyAudit: {
+              type: Type.OBJECT,
+              properties: {
+                eligibility: { type: Type.STRING },
+                restockingFee: { type: Type.STRING },
+                conditionRequirement: { type: Type.STRING },
+              },
+              required: ['eligibility'],
+            },
+            taxAudit: {
+              type: Type.OBJECT,
+              properties: {
+                isDeductible: { type: Type.BOOLEAN },
+                irsSection: { type: Type.STRING },
+                recommendedRetentionYears: { type: Type.NUMBER },
+              },
+              required: ['isDeductible', 'irsSection'],
+            },
+            hiddenClauses: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
+            executiveSummary: { type: Type.STRING },
+          },
+          required: ['documentTitle', 'warrantyCoverageAudit', 'executiveSummary'],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    return res.json({
+      success: true,
+      audit: parsed,
+    });
+  } catch (error: any) {
+    console.error('Error in AI document audit:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 3. AI Asset Depreciation & Resale Valuator
+app.post('/api/gemini/valuate-asset', async (req, res) => {
+  try {
+    const { purchase } = req.body;
+    const ai = getAI();
+
+    const pDate = new Date(purchase.purchaseDate || Date.now());
+    const ageMonths = Math.max(0, Math.round((Date.now() - pDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4)));
+
+    if (!ai) {
+      const origPrice = Number(purchase.price) || 1000;
+      const depRate = purchase.category === 'Electronics' ? 0.025 : 0.015;
+      const currentVal = Math.max(origPrice * 0.25, origPrice * Math.pow(1 - depRate, ageMonths));
+
+      return res.json({
+        success: true,
+        valuation: {
+          originalPrice: origPrice,
+          estimatedCurrentValue: Math.round(currentVal),
+          depreciationPercentage: Math.round(((origPrice - currentVal) / origPrice) * 100),
+          assetAgeMonths: ageMonths,
+          conditionGrade: 'Excellent (A-)',
+          recommendedResaleWindow: 'Next 3-6 months for optimal yield before next model release',
+          marketTrend: 'Steady secondary market demand on eBay & Swappa',
+          replacementCost: Math.round(origPrice * 1.05),
+          annualDepreciationRate: purchase.category === 'Electronics' ? '24% / year' : '14% / year',
+          resaleAdvice: `Consider listing on peer-to-peer electronics marketplaces with proof of purchase and original packaging to command a 10-15% premium.`,
+        },
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: `Estimate the current fair market resale value, annual depreciation rate, and resale timing advice for this purchase:
+Product: ${purchase.name}
+Category: ${purchase.category}
+Original Price: $${purchase.price} ${purchase.currency || 'USD'}
+Purchase Date: ${purchase.purchaseDate} (Approx ${ageMonths} months old)
+Vendor: ${purchase.vendor}
+Notes: ${purchase.notes || 'None'}`,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            originalPrice: { type: Type.NUMBER },
+            estimatedCurrentValue: { type: Type.NUMBER },
+            depreciationPercentage: { type: Type.NUMBER },
+            assetAgeMonths: { type: Type.NUMBER },
+            conditionGrade: { type: Type.STRING },
+            recommendedResaleWindow: { type: Type.STRING },
+            marketTrend: { type: Type.STRING },
+            replacementCost: { type: Type.NUMBER },
+            annualDepreciationRate: { type: Type.STRING },
+            resaleAdvice: { type: Type.STRING },
+          },
+          required: ['estimatedCurrentValue', 'depreciationPercentage', 'annualDepreciationRate', 'resaleAdvice'],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    return res.json({
+      success: true,
+      valuation: parsed,
+    });
+  } catch (error: any) {
+    console.error('Error valuating asset:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 4. Ask Keepr Natural Language Assistant (Conversational Purchase Intelligence)
 app.post('/api/gemini/chat', async (req, res) => {
   try {
     const { message, purchasesSummary, chatHistory = [] } = req.body;
     const ai = getAI();
 
     if (!ai) {
-      // Fallback assistant response
       const lower = (message || '').toLowerCase();
       let reply = "I analyzed your purchases. You have 9 tracked items with $10,832.44 in total value, 6 active warranties, and 2 return windows closing soon.";
       if (lower.includes('software') || lower.includes('subscription')) {
-        reply = "You spent $2,450.00 on software subscriptions across Q3 (including Figma Pro and AWS). This represents about 22.6% of your tech budget.";
+        reply = "You spent **$2,450.00** on software subscriptions across Q3 (including Figma Pro and AWS Cloud). This represents about **22.6%** of your tech budget.";
       } else if (lower.includes('return') || lower.includes('deadline')) {
-        reply = "Your return window for the MacBook Pro 16\" closes in 3 days (Deadline: Nov 7). The Sony WH-1000XM5 also has only 2 days remaining.";
+        reply = "Your return window for the **MacBook Pro 16\"** closes in **3 days** (Deadline: Nov 7). The **Sony WH-1000XM5** also has only **2 days remaining**.";
       } else if (lower.includes('warranty') || lower.includes('guarantee')) {
-        reply = "You have 6 active warranties. The longest is your Herman Miller Aeron Chair with 11 years remaining (valid through 2035). Breville Barista Pro warranty expires in 14 days.";
-      } else if (lower.includes('tax')) {
-        reply = "$5,434.99 of your tracked purchases qualify as business deductions (MacBook Pro, Herman Miller Aeron, Figma Pro, Epson EcoTank, and Staples supplies).";
+        reply = "You have **6 active warranties**. The longest is your **Herman Miller Aeron Chair** with 11 years remaining (valid through 2035). Your **Breville Barista Pro** warranty expires in 14 days.";
+      } else if (lower.includes('tax') || lower.includes('deduct')) {
+        reply = "**$5,434.99** (74%) of your tracked purchases qualify as business expense deductions (MacBook Pro, Herman Miller Aeron, Figma Pro, Epson EcoTank, and Staples supplies).";
       }
 
       return res.json({
@@ -170,12 +375,12 @@ app.post('/api/gemini/chat', async (req, res) => {
       });
     }
 
-    const systemInstruction = `You are Keepr, a high-density, precise purchase intelligence assistant.
-Your style is calm, concise, and mathematically accurate.
-Use concise formatting with bold numbers and bullet points when comparing dates or spending amounts.
+    const systemInstruction = `You are Keepr, an elite, high-density AI purchase intelligence assistant.
+Your style is calm, concise, authoritative, and mathematically accurate.
+Use concise markdown formatting with bold numbers and bullet points when comparing dates, warranties, or spending amounts.
 Always reference specific vendors, dollar amounts, purchase dates, warranty coverage, and return windows from the user's data.
 
-Here is the current state of the user's tracked purchases:
+Here is the current database of the user's tracked purchases:
 ${JSON.stringify(purchasesSummary || [], null, 2)}`;
 
     const formattedHistory = chatHistory.map((m: any) => ({
@@ -193,7 +398,7 @@ ${JSON.stringify(purchasesSummary || [], null, 2)}`;
       contents,
       config: {
         systemInstruction,
-        temperature: 0.3,
+        temperature: 0.2,
       },
     });
 
@@ -210,37 +415,37 @@ ${JSON.stringify(purchasesSummary || [], null, 2)}`;
   }
 });
 
-// 3. AI Warranty Claim Generator
+// 5. AI Warranty Claim Generator
 app.post('/api/gemini/claim-generator', async (req, res) => {
   try {
     const { purchase, defectDescription, claimantName = 'Alex Morgan' } = req.body;
     const ai = getAI();
 
     if (!ai) {
-      const claimText = `OFFICIAL WARRANTY CLAIM NOTICE
+      const claimText = `OFFICIAL WARRANTY CLAIM & RMA SERVICE NOTICE
 
 Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-To: ${purchase.warranty?.provider || purchase.vendor} - Warranty & Customer Support
+To: ${purchase.warranty?.provider || purchase.vendor} - Warranty & Claims Division
 From: ${claimantName}
 
-RE: Warranty Service & Repair Claim for ${purchase.name}
-Product Serial Number: ${purchase.serialNumber || 'N/A'}
+RE: Formal Warranty Service & Replacement Request for ${purchase.name}
+Product Serial Number: ${purchase.serialNumber || 'Recorded in Purchase Proof'}
 Original Purchase Date: ${purchase.purchaseDate}
-Invoice / Order Reference: ${purchase.orderNumber || 'N/A'}
-Purchase Vendor: ${purchase.vendor}
+Invoice / Order ID: ${purchase.orderNumber || 'Attached Invoice'}
+Retailer: ${purchase.vendor}
 
 Dear Support Team,
 
-I am writing to formally submit a warranty repair/replacement claim under the manufacturer's limited warranty policy for my ${purchase.name}.
+I am writing to formally submit a manufacturer warranty service claim under the authorized limited warranty terms for my ${purchase.name}.
 
-DEFECT SUMMARY & SYMPTOMS:
-${defectDescription || 'Device exhibits intermittent hardware failure during standard operation under normal operating conditions.'}
+DEFECT DESCRIPTION & REPRODUCIBLE SYMPTOMS:
+${defectDescription || 'Device exhibits intermittent hardware malfunctions during standard operating procedures under normal conditions.'}
 
-PURCHASE VERIFICATION:
-This item was purchased on ${purchase.purchaseDate} and remains well within the active warranty period (${purchase.warranty?.durationMonths || 12}-month coverage valid through ${purchase.warranty?.expiryDate || 'active period'}). Proof of purchase receipt and serial registration tag are attached with this notice.
+WARRANTY COVERAGE VERIFICATION:
+This hardware unit was purchased on ${purchase.purchaseDate} and remains well within the active warranty period (${purchase.warranty?.durationMonths || 12}-month coverage valid through ${purchase.warranty?.expiryDate || 'Active Coverage Period'}). Proof of purchase, invoice receipt, and serial number registration are attached with this notice.
 
 REQUESTED REMEDY:
-In accordance with your warranty terms, I request a Return Merchandise Authorization (RMA) and a prepaid shipping label to have this unit inspected and repaired, or replaced with a functional replacement unit.
+In accordance with statutory consumer warranty standards and your published warranty policy, I request a Return Merchandise Authorization (RMA) number and a prepaid shipping label to have this unit serviced, or replaced with a certified replacement unit.
 
 Thank you for your prompt assistance.
 
@@ -255,17 +460,17 @@ ${claimantName}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
-      contents: `Generate a formal, highly professional manufacturer warranty claim letter for:
+      contents: `Generate a formal, highly authoritative manufacturer warranty claim & RMA letter:
 Product: ${purchase.name}
 Vendor: ${purchase.vendor}
 Purchase Date: ${purchase.purchaseDate}
-Serial Number: ${purchase.serialNumber || 'Provided in receipt'}
+Serial Number: ${purchase.serialNumber || 'Provided in attached invoice'}
 Order Number: ${purchase.orderNumber || 'Attached in documentation'}
-Warranty Terms: ${purchase.warranty?.terms || 'Standard limited warranty'}
+Warranty Terms: ${purchase.warranty?.terms || 'Standard limited hardware warranty'}
 Reported Issue / Defect: ${defectDescription}
 Claimant: ${claimantName}
 
-Include clear headings, RMA request, citations of coverage, and attachment references.`,
+Include legal formality, clear headings, RMA request, statutory warranty citations, and proof of purchase reference.`,
       config: {
         temperature: 0.2,
       },
@@ -281,7 +486,7 @@ Include clear headings, RMA request, citations of coverage, and attachment refer
   }
 });
 
-// 4. AI Return Request Generator
+// 6. AI Return Request Generator
 app.post('/api/gemini/return-generator', async (req, res) => {
   try {
     const { purchase, returnReason, customerName = 'Alex Morgan' } = req.body;
@@ -290,7 +495,7 @@ app.post('/api/gemini/return-generator', async (req, res) => {
     if (!ai) {
       const returnEmail = `Subject: Return & Refund Request - Order #${purchase.orderNumber || '99281'} - ${purchase.name}
 
-Dear ${purchase.vendor} Customer Service,
+Dear ${purchase.vendor} Customer Care,
 
 I would like to initiate a return for my recent purchase of the ${purchase.name}, ordered on ${purchase.purchaseDate} (Order Reference: ${purchase.orderNumber || 'N/A'}).
 
@@ -319,7 +524,7 @@ Return Deadline: ${purchase.returnWindow?.deadlineDate}
 Reason: ${returnReason}
 Customer: ${customerName}
 
-Keep the tone courteous, crisp, compliant with standard return policies, and requesting a prepaid return label.`,
+Keep the tone courteous, crisp, compliant with standard retailer return policies, and requesting a prepaid return label.`,
       config: {
         temperature: 0.2,
       },
@@ -335,7 +540,7 @@ Keep the tone courteous, crisp, compliant with standard return policies, and req
   }
 });
 
-// 5. AI Spending Insights Generator
+// 7. AI Spending & Risk Insights Generator
 app.post('/api/gemini/insights', async (req, res) => {
   try {
     const { purchases } = req.body;
@@ -402,6 +607,63 @@ Generate 3 high-impact, actionable financial/asset insights for Keepr. Return st
     });
   } catch (error: any) {
     console.error('Error generating AI insights:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 8. AI Semantic Natural Language Search across Purchases
+app.post('/api/gemini/semantic-search', async (req, res) => {
+  try {
+    const { query, purchases } = req.body;
+    const ai = getAI();
+
+    if (!ai) {
+      const q = (query || '').toLowerCase();
+      const matched = purchases.filter((p: any) =>
+        p.name.toLowerCase().includes(q) ||
+        p.vendor.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        (p.notes && p.notes.toLowerCase().includes(q))
+      );
+      return res.json({
+        success: true,
+        matchedIds: matched.map((m: any) => m.id),
+        explanation: `Found ${matched.length} purchases matching "${query}".`,
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: `Given this user natural language query: "${query}"
+And this list of purchases:
+${JSON.stringify(purchases.map((p: any) => ({ id: p.id, name: p.name, vendor: p.vendor, category: p.category, price: p.price, purchaseDate: p.purchaseDate, warranty: p.warranty, returnWindow: p.returnWindow, taxDeductible: p.taxDeductible })), null, 2)}
+
+Identify which purchase IDs semantically match the user's intent (e.g. "expensive gadgets", "items I can return", "apple gear", "tax deductions", "items bought this month").
+Return a JSON object with 'matchedIds' (array of string IDs) and 'explanation' (brief sentence).`,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            matchedIds: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
+            explanation: { type: Type.STRING },
+          },
+          required: ['matchedIds', 'explanation'],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    return res.json({
+      success: true,
+      matchedIds: parsed.matchedIds || [],
+      explanation: parsed.explanation || '',
+    });
+  } catch (error: any) {
+    console.error('Error in semantic search:', error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });

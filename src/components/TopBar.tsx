@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText } from 'lucide-react';
+import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import { ActiveView } from '../types';
 
 interface TopBarProps {
@@ -7,6 +7,7 @@ interface TopBarProps {
   setSearchQuery: (query: string) => void;
   openCommandPalette: () => void;
   openScanner: () => void;
+  openAIChat: () => void;
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
   openSettings: () => void;
@@ -18,6 +19,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   setSearchQuery,
   openCommandPalette,
   openScanner,
+  openAIChat,
   activeView,
   setActiveView,
   openSettings,
@@ -67,6 +69,16 @@ export const TopBar: React.FC<TopBarProps> = ({
 
       {/* Right side: Actions */}
       <div className="flex items-center gap-2.5">
+        {/* Ask Keepr AI Assistant */}
+        <button
+          onClick={openAIChat}
+          className="px-3 py-2 bg-[#F9F9FB] border border-[#E2E8F0] hover:border-[#0F172A] text-[#0F172A] rounded-xl text-[13px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+          title="Ask Keepr AI Assistant"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#0F172A]" />
+          <span className="hidden sm:inline">Ask Keepr AI</span>
+        </button>
+
         {/* Add / Scan CTA */}
         <button
           onClick={openScanner}

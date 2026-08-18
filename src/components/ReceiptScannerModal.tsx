@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   UploadCloud,
@@ -10,6 +10,15 @@ import {
   Camera,
   ArrowRight,
   ShieldCheck,
+  RotateCw,
+  Eye,
+  Code,
+  DollarSign,
+  Calendar,
+  Layers,
+  Check,
+  FileCode,
+  Zap,
 } from 'lucide-react';
 import { PurchaseItem, CategoryType } from '../types';
 
@@ -24,12 +33,71 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   onClose,
   onSavePurchase,
 }) => {
+  const [activeTab, setActiveTab] = useState<'upload' | 'camera' | 'paste'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewBase64, setPreviewBase64] = useState<string | null>(null);
+  const [pastedText, setPastedText] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanStep, setScanStep] = useState<string>('');
   const [extractedData, setExtractedData] = useState<any>(null);
+  const [showRawInspector, setShowRawInspector] = useState<boolean>(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Stop camera when unmounting or switching tab or closing
+  useEffect(() => {
+    if (activeTab === 'camera' && isOpen) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [activeTab, isOpen]);
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.warn('Camera access error:', err);
+      setCameraError('Camera access unavailable. You can upload an image or select a sample receipt.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg', 0.9);
+      setPreviewBase64(base64);
+      stopCamera();
+      triggerAIScan(base64, 'image/jpeg');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -46,56 +114,67 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
       setPreviewBase64(base64);
-      triggerAIScan(base64, file.type);
+      triggerAIScan(base64, file.type || 'image/jpeg');
     };
     reader.readAsDataURL(file);
   };
 
-  const loadSampleReceipt = (type: 'apple' | 'amazon' | 'dwr') => {
+  const handlePasteSubmit = () => {
+    if (!pastedText.trim()) return;
+    setPreviewBase64(null);
+    triggerAIScan(undefined, 'text/plain', pastedText);
+  };
+
+  const loadSampleReceipt = (type: 'apple' | 'amazon' | 'herman' | 'breville') => {
     let mockContext = '';
-    let mockName = '';
-    let mockPrice = 0;
-    let mockVendor = '';
-    let mockCategory: CategoryType = 'Electronics';
+    let mockPhoto = '';
 
     if (type === 'apple') {
-      mockName = 'Apple Studio Display 27" 5K';
-      mockPrice = 1599.00;
-      mockVendor = 'Apple Store';
+      mockPhoto = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80';
       mockContext = `APPLE STORE RETAIL INVOICE
+Store: Apple Fifth Avenue, NY
 Order Number: W998124901
 Item: Apple Studio Display 27-inch 5K Retina (Standard Glass, Tilt-adjustable)
-Price: $1,599.00 USD
-Serial: APL-SD5K-881920
+Unit Price: $1,599.00 USD
+Serial Number: APL-SD5K-881920
+Payment Method: Apple Pay (Visa •••• 4012)
 Date: 2023-10-28
-Warranty: 1-Year Limited Manufacturer Warranty
-Return Window: 14 days`;
+Warranty: 1-Year Limited Manufacturer Warranty (Covers screen panel, internal power supply, logic board)
+Return Window: 14 calendar days from delivery (Deadline: Nov 11, 2023)`;
     } else if (type === 'amazon') {
-      mockName = 'Keychron Q1 Pro Wireless Mechanical Keyboard';
-      mockPrice = 198.00;
-      mockVendor = 'Amazon';
+      mockPhoto = 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80';
       mockContext = `AMAZON.COM INVOICE
 Order # 113-9918231-5501923
-Keychron Q1 Pro Custom Mechanical Keyboard (Carbon Black, Gateron Red)
+Seller: Keychron Direct Fulfillment
+Item: Keychron Q1 Pro Custom Mechanical Keyboard (Carbon Black, Wireless QMK/VIA)
 Price: $198.00 USD
+Serial Number: KC-Q1P-7721
 Date: 2023-10-27
-Warranty: 12 Months
-Return Period: 30 days hassle-free`;
+Warranty: 12-Month Limited Manufacturer Warranty
+Return Window: 30 days hassle-free returns`;
+    } else if (type === 'herman') {
+      mockPhoto = 'https://images.unsplash.com/photo-1580481077195-c3f25c7e148e?auto=format&fit=crop&w=800&q=80';
+      mockContext = `HERMAN MILLER OFFICIAL INVOICE
+Order: HM-9921448
+Item: Aeron Chair - Size B (Graphite Frame, PostureFit SL, Fully Adjustable Arms)
+Total: $1,495.00 USD
+Serial: HM-AER-2023-9914
+Date: 2023-09-15
+Warranty: Herman Miller 12-Year 24/7 Comprehensive Warranty (Pneumatic cylinder, frame, tilt mechanism, pellicle mesh)
+Return Window: 30-Day In-Home Trial`;
     } else {
-      mockName = 'Grovemade Walnut Desk Shelf System';
-      mockPrice = 280.00;
-      mockVendor = 'Grovemade';
-      mockCategory = 'Office Furniture';
-      mockContext = `GROVEMADE ORDER CONFIRMATION
-Order: GM-88192
-Item: Solid Walnut Desk Shelf (Medium) + Aluminum Tray
-Total: $280.00 USD
-Date: 2023-10-26
-Warranty: 2-Year Craftsmanship Guarantee
-Return Window: 30 Days`;
+      mockPhoto = 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=800&q=80';
+      mockContext = `BREVILLE RETAIL RECEIPT
+Williams Sonoma Flagship
+Item: Breville Barista Pro Espresso Machine (Brushed Stainless Steel)
+Price: $849.95 USD
+Serial Number: BES878BSS-2023-441
+Date: 2023-10-18
+Warranty: 2-Year Limited Product Warranty (ThermoJet heating unit, conical burr grinder)
+Return Window: 30 Days return policy`;
     }
 
-    setPreviewBase64('https://images.unsplash.com/photo-1554415707-9e4c07dca042?auto=format&fit=crop&w=600&q=80');
+    setPreviewBase64(mockPhoto);
     triggerAIScan(undefined, 'text/plain', mockContext);
   };
 
@@ -104,7 +183,8 @@ Return Window: 30 Days`;
     setScanStep('Analyzing document structure with Gemini 3.7 Flash...');
 
     try {
-      setTimeout(() => setScanStep('Extracting warranty periods & return deadlines...'), 600);
+      setTimeout(() => setScanStep('Extracting itemized pricing, serial IDs & vendors...'), 500);
+      setTimeout(() => setScanStep('Calculating warranty coverage & return deadlines...'), 1100);
 
       const res = await fetch('/api/gemini/scan-receipt', {
         method: 'POST',
@@ -132,8 +212,8 @@ Return Window: 30 Days`;
     if (!extractedData) return;
 
     const purchaseDate = extractedData.purchaseDate || new Date().toISOString().split('T')[0];
-    const warrantyMonths = extractedData.warrantyMonths || 12;
-    const returnDays = extractedData.returnDays || 14;
+    const warrantyMonths = Number(extractedData.warrantyMonths) >= 0 ? Number(extractedData.warrantyMonths) : 12;
+    const returnDays = Number(extractedData.returnDays) >= 0 ? Number(extractedData.returnDays) : 14;
 
     // Calculate dates
     const pDate = new Date(purchaseDate);
@@ -142,6 +222,9 @@ Return Window: 30 Days`;
 
     const retDeadlineDate = new Date(pDate);
     retDeadlineDate.setDate(retDeadlineDate.getDate() + returnDays);
+
+    const now = new Date();
+    const isReturnOpen = retDeadlineDate >= now && returnDays > 0;
 
     const newPurchase: PurchaseItem = {
       id: `pur-${Date.now()}`,
@@ -152,7 +235,7 @@ Return Window: 30 Days`;
       price: Number(extractedData.price) || 0,
       currency: extractedData.currency || 'USD',
       orderNumber: extractedData.orderNumber || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-      serialNumber: extractedData.serialNumber,
+      serialNumber: extractedData.serialNumber || undefined,
       paymentMethod: extractedData.paymentMethod || 'Credit Card (•••• 1004)',
       warranty: {
         hasWarranty: warrantyMonths > 0,
@@ -167,7 +250,7 @@ Return Window: 30 Days`;
         hasReturn: returnDays > 0,
         returnDays,
         deadlineDate: retDeadlineDate.toISOString().split('T')[0],
-        status: returnDays > 0 ? 'open' : 'closed',
+        status: isReturnOpen ? 'open' : 'closed',
         policy: extractedData.returnPolicy || `${returnDays}-day standard return policy.`,
       },
       documents: [
@@ -184,7 +267,7 @@ Return Window: 30 Days`;
       tags: ['AI Scanned', extractedData.category || 'Asset'],
       notes: extractedData.notes,
       aiConfidence: extractedData.aiConfidence || 0.98,
-      aiExtractedNotes: `Automatically parsed on ${new Date().toLocaleDateString()}`,
+      aiExtractedNotes: `Automatically parsed with Gemini on ${new Date().toLocaleDateString()}`,
       taxDeductible: Boolean(extractedData.taxDeductible),
     };
 
@@ -222,55 +305,167 @@ Return Window: 30 Days`;
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           {!extractedData && !isScanning && (
             <div>
-              {/* Dropzone */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-[#CBD5E1] hover:border-[#0F172A] bg-[#F9F9FB] rounded-2xl p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center group"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div className="w-12 h-12 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] mb-3 group-hover:scale-105 transition-transform shadow-xs">
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-                <p className="font-medium text-[14px] text-[#0F172A]">
-                  Click or drag and drop receipt / invoice
-                </p>
-                <p className="text-[12px] text-[#76777D] mt-1">
-                  Supports PNG, JPG, WEBP, and PDF files
-                </p>
+              {/* Input Mode Selector */}
+              <div className="flex items-center gap-2 mb-4 p-1 bg-[#F1F5F9] rounded-xl w-fit">
+                <button
+                  onClick={() => setActiveTab('upload')}
+                  className={`px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'upload'
+                      ? 'bg-white text-[#0F172A] shadow-xs'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload File</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('camera')}
+                  className={`px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'camera'
+                      ? 'bg-white text-[#0F172A] shadow-xs'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Live Camera</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('paste')}
+                  className={`px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'paste'
+                      ? 'bg-white text-[#0F172A] shadow-xs'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Paste Invoice Text</span>
+                </button>
               </div>
+
+              {/* Upload Tab */}
+              {activeTab === 'upload' && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-[#CBD5E1] hover:border-[#0F172A] bg-[#F9F9FB] rounded-2xl p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center group"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <div className="w-12 h-12 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] mb-3 group-hover:scale-105 transition-transform shadow-xs">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <p className="font-medium text-[14px] text-[#0F172A]">
+                    Click or drag and drop receipt / invoice
+                  </p>
+                  <p className="text-[12px] text-[#76777D] mt-1">
+                    Supports PNG, JPG, WEBP, and PDF receipts
+                  </p>
+                </div>
+              )}
+
+              {/* Camera Tab */}
+              {activeTab === 'camera' && (
+                <div className="bg-[#0F172A] rounded-2xl p-4 text-white flex flex-col items-center relative overflow-hidden">
+                  {cameraError ? (
+                    <div className="py-8 text-center px-4">
+                      <AlertCircle className="w-8 h-8 text-[#F87171] mx-auto mb-2" />
+                      <p className="text-[13px] font-medium">{cameraError}</p>
+                    </div>
+                  ) : (
+                    <div className="relative w-full max-w-md aspect-[4/3] bg-black rounded-xl overflow-hidden flex items-center justify-center">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Viewfinder Target Frame */}
+                      <div className="absolute inset-4 border-2 border-white/60 rounded-xl pointer-events-none flex flex-col justify-between p-2">
+                        <div className="flex justify-between text-[10px] font-mono-code text-white/80">
+                          <span>RECEIPT SCANNER</span>
+                          <span>AI READY</span>
+                        </div>
+                        <div className="text-center text-[11px] text-white/80 bg-black/40 py-1 rounded">
+                          Position receipt within frame
+                        </div>
+                      </div>
+                      <canvas ref={canvasRef} className="hidden" />
+                    </div>
+                  )}
+
+                  {!cameraError && (
+                    <div className="mt-4 flex items-center gap-3">
+                      <button
+                        onClick={capturePhoto}
+                        className="px-6 py-2.5 bg-white text-[#0F172A] rounded-full font-medium text-[13px] hover:bg-[#F1F5F9] transition-all flex items-center gap-2 shadow-lg cursor-pointer active:scale-95"
+                      >
+                        <Zap className="w-4 h-4 fill-[#0F172A]" />
+                        <span>Capture & Scan</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Paste Tab */}
+              {activeTab === 'paste' && (
+                <div className="space-y-3">
+                  <textarea
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    placeholder="Paste raw email confirmation, store order text, or OCR invoice content here..."
+                    rows={6}
+                    className="w-full p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl text-[12px] font-mono-code text-[#0F172A] focus:outline-none focus:border-[#0F172A]"
+                  />
+                  <button
+                    onClick={handlePasteSubmit}
+                    disabled={!pastedText.trim()}
+                    className="px-4 py-2 bg-[#0F172A] disabled:opacity-40 text-white rounded-xl text-[12px] font-medium hover:bg-[#1E293B] transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Process Text with Gemini</span>
+                  </button>
+                </div>
+              )}
 
               {/* Sample Receipts Quick Load */}
               <div className="mt-5 pt-4 border-t border-[#E2E8F0]">
                 <p className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold mb-2.5">
                   Or test with sample preloaded receipts:
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <button
                     onClick={() => loadSampleReceipt('apple')}
-                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#94A3B8] text-left transition-colors cursor-pointer"
+                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#0F172A] text-left transition-colors cursor-pointer group"
                   >
-                    <p className="font-medium text-[12px] text-[#0F172A]">Apple Studio Display</p>
-                    <p className="text-[11px] text-[#76777D]">Apple Store · $1,599.00</p>
+                    <p className="font-medium text-[12px] text-[#0F172A] group-hover:text-black">Apple Display</p>
+                    <p className="text-[11px] text-[#76777D]">$1,599 · 1-Yr War.</p>
                   </button>
                   <button
                     onClick={() => loadSampleReceipt('amazon')}
-                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#94A3B8] text-left transition-colors cursor-pointer"
+                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#0F172A] text-left transition-colors cursor-pointer group"
                   >
-                    <p className="font-medium text-[12px] text-[#0F172A]">Keychron Keyboard</p>
-                    <p className="text-[11px] text-[#76777D]">Amazon.com · $198.00</p>
+                    <p className="font-medium text-[12px] text-[#0F172A] group-hover:text-black">Keychron Q1</p>
+                    <p className="text-[11px] text-[#76777D]">$198 · 30d Return</p>
                   </button>
                   <button
-                    onClick={() => loadSampleReceipt('dwr')}
-                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#94A3B8] text-left transition-colors cursor-pointer"
+                    onClick={() => loadSampleReceipt('herman')}
+                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#0F172A] text-left transition-colors cursor-pointer group"
                   >
-                    <p className="font-medium text-[12px] text-[#0F172A]">Grovemade Shelf</p>
-                    <p className="text-[11px] text-[#76777D]">Grovemade · $280.00</p>
+                    <p className="font-medium text-[12px] text-[#0F172A] group-hover:text-black">Aeron Chair</p>
+                    <p className="text-[11px] text-[#76777D]">$1,495 · 12-Yr War.</p>
+                  </button>
+                  <button
+                    onClick={() => loadSampleReceipt('breville')}
+                    className="p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl hover:border-[#0F172A] text-left transition-colors cursor-pointer group"
+                  >
+                    <p className="font-medium text-[12px] text-[#0F172A] group-hover:text-black">Barista Pro</p>
+                    <p className="text-[11px] text-[#76777D]">$849.95 · 2-Yr War.</p>
                   </button>
                 </div>
               </div>
@@ -282,11 +477,11 @@ Return Window: 30 Days`;
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
               <div className="relative">
                 <Loader2 className="w-10 h-10 text-[#0F172A] animate-spin" />
-                <Sparkles className="w-4 h-4 text-[#76777D] absolute -top-1 -right-1" />
+                <Sparkles className="w-4 h-4 text-[#76777D] absolute -top-1 -right-1 animate-pulse" />
               </div>
               <div>
                 <h4 className="font-medium text-[15px] text-[#0F172A]">
-                  Scanning & Parsing Receipt...
+                  Scanning & Parsing Document...
                 </h4>
                 <p className="text-[12px] text-[#76777D] mt-1 font-mono-code">{scanStep}</p>
               </div>
@@ -300,11 +495,23 @@ Return Window: 30 Days`;
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
                   <span className="font-medium">
-                    Successfully extracted metadata (98% confidence score)
+                    Successfully extracted metadata ({(extractedData.aiConfidence * 100).toFixed(0)}% confidence score)
                   </span>
                 </div>
-                <span className="font-mono-code text-[11px]">Gemini 3.7 OCR</span>
+                <button
+                  onClick={() => setShowRawInspector(!showRawInspector)}
+                  className="font-mono-code text-[11px] underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Code className="w-3.5 h-3.5" />
+                  <span>{showRawInspector ? 'Hide Raw JSON' : 'Inspect AI Output'}</span>
+                </button>
               </div>
+
+              {showRawInspector && (
+                <div className="p-3 bg-[#0F172A] text-[#E2E8F0] rounded-xl font-mono-code text-[11px] overflow-x-auto max-h-48">
+                  <pre>{JSON.stringify(extractedData, null, 2)}</pre>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
                 <div>
@@ -391,7 +598,7 @@ Return Window: 30 Days`;
                   </label>
                   <input
                     type="number"
-                    value={extractedData.warrantyMonths || 12}
+                    value={extractedData.warrantyMonths ?? 12}
                     onChange={(e) =>
                       setExtractedData({
                         ...extractedData,
@@ -408,7 +615,7 @@ Return Window: 30 Days`;
                   </label>
                   <input
                     type="number"
-                    value={extractedData.returnDays || 14}
+                    value={extractedData.returnDays ?? 14}
                     onChange={(e) =>
                       setExtractedData({
                         ...extractedData,
@@ -421,7 +628,7 @@ Return Window: 30 Days`;
 
                 <div>
                   <label className="block text-[#76777D] font-mono-code text-[11px] uppercase mb-1">
-                    Serial Number (Optional)
+                    Serial Number / IMEI
                   </label>
                   <input
                     type="text"
@@ -432,6 +639,41 @@ Return Window: 30 Days`;
                     placeholder="e.g. SN-8829-X01"
                     className="w-full px-3.5 py-2 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl font-mono-code text-[#0F172A]"
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[#76777D] font-mono-code text-[11px] uppercase mb-1">
+                    Warranty Provider & Terms
+                  </label>
+                  <input
+                    type="text"
+                    value={extractedData.warrantyTerms || extractedData.warrantyProvider || ''}
+                    onChange={(e) =>
+                      setExtractedData({ ...extractedData, warrantyTerms: e.target.value })
+                    }
+                    placeholder="Manufacturer warranty coverage summary"
+                    className="w-full px-3.5 py-2 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl text-[#0F172A]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex items-center gap-3 p-3 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
+                  <input
+                    type="checkbox"
+                    id="taxDeductibleCheck"
+                    checked={Boolean(extractedData.taxDeductible)}
+                    onChange={(e) =>
+                      setExtractedData({ ...extractedData, taxDeductible: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded text-[#0F172A] focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="taxDeductibleCheck" className="text-[12px] text-[#0F172A] cursor-pointer">
+                    <span className="font-medium">Tax Deductible Expense</span>
+                    {extractedData.taxCategory && (
+                      <span className="ml-2 text-[#76777D] font-mono-code text-[11px]">
+                        ({extractedData.taxCategory})
+                      </span>
+                    )}
+                  </label>
                 </div>
               </div>
             </div>
@@ -452,7 +694,7 @@ Return Window: 30 Days`;
             </button>
           ) : (
             <span className="text-[11px] text-[#76777D] font-mono-code">
-              OCR Engine Ready
+              Gemini 3.7 OCR Engine Ready
             </span>
           )}
 

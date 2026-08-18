@@ -13,6 +13,7 @@ import { PurchaseDetailModal } from './components/PurchaseDetailModal';
 import { AIClaimModal } from './components/AIClaimModal';
 import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/SettingsModal';
+import { AIChatDrawer } from './components/AIChatDrawer';
 import { ActiveView, PurchaseItem, AIActionItem } from './types';
 import { INITIAL_PURCHASES, INITIAL_ACTIONS } from './data/mockData';
 
@@ -33,6 +34,7 @@ export function App() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<PurchaseItem | null>(null);
 
   const [claimModalState, setClaimModalState] = useState<{
@@ -113,6 +115,7 @@ export function App() {
           setSearchQuery={setSearchQuery}
           openCommandPalette={() => setIsCommandPaletteOpen(true)}
           openScanner={() => setIsScannerOpen(true)}
+          openAIChat={() => setIsAIChatOpen(true)}
           activeView={activeView}
           setActiveView={setActiveView}
           openSettings={() => setIsSettingsOpen(true)}
@@ -239,6 +242,15 @@ export function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      <AIChatDrawer
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        purchases={purchases}
+        onSelectPurchase={(item) => setSelectedPurchase(item)}
+        onTriggerClaim={handleTriggerClaim}
+        onTriggerReturn={handleTriggerReturn}
       />
     </div>
   );

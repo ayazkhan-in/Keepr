@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ShieldCheck,
@@ -14,6 +14,11 @@ import {
   Tag,
   Building,
   CheckCircle2,
+  TrendingDown,
+  Loader2,
+  DollarSign,
+  Clock,
+  ArrowUpRight,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
 
@@ -34,7 +39,35 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'warranty' | 'return' | 'documents'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'valuation' | 'warranty' | 'return' | 'documents'>('overview');
+  const [valuationData, setValuationData] = useState<any>(null);
+  const [isValuating, setIsValuating] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (activeTab === 'valuation' && purchase && !valuationData) {
+      fetchValuation();
+    }
+  }, [activeTab, purchase]);
+
+  const fetchValuation = async () => {
+    if (!purchase) return;
+    setIsValuating(true);
+    try {
+      const res = await fetch('/api/gemini/valuate-asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchase }),
+      });
+      const data = await res.json();
+      if (data.success && data.valuation) {
+        setValuationData(data.valuation);
+      }
+    } catch (err) {
+      console.error('Valuation error:', err);
+    } finally {
+      setIsValuating(false);
+    }
+  };
 
   if (!isOpen || !purchase) return null;
 
@@ -57,7 +90,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
             <h2 className="text-xl font-semibold text-[#0F172A] tracking-tight">
               {purchase.name}
             </h2>
-            <p className="text-[12px] text-[#76777D] mt-0.5">
+            <p className="text-[12px] text-[#76777D] mt-0.5 font-normal">
               {purchase.vendor} · Purchased on {purchase.purchaseDate}
             </p>
           </div>
@@ -85,9 +118,10 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="border-b border-[#E2E8F0] px-5 flex gap-4 bg-white text-[13px] font-medium">
+        <div className="border-b border-[#E2E8F0] px-5 flex gap-4 bg-white text-[13px] font-medium overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview' },
+            { id: 'valuation', label: 'AI Resale Valuation' },
             { id: 'warranty', label: 'Warranty & Protection' },
             { id: 'return', label: 'Return Policy' },
             { id: 'documents', label: `Documents (${purchase.documents.length})` },
@@ -95,7 +129,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2.5 border-b-2 transition-colors cursor-pointer ${
+              className={`py-2.5 border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-[#0F172A] text-[#0F172A]'
                   : 'border-transparent text-[#76777D] hover:text-[#0F172A]'
@@ -173,6 +207,77 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                   <span className="font-mono-code text-[11px] text-[#10B981] font-semibold">
                     {Math.round(purchase.aiConfidence * 100)}% Match
                   </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'valuation' && (
+            <div className="space-y-5">
+              {isValuating && (
+                <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                  <Loader2 className="w-8 h-8 text-[#0F172A] animate-spin" />
+                  <p className="text-[13px] font-medium text-[#0F172A]">
+                    Estimating secondary market value & depreciation curves...
+                  </p>
+                  <p className="text-[11px] text-[#76777D] font-mono-code">
+                    Gemini 3.7 Flash Asset Valuation Engine
+                  </p>
+                </div>
+              )}
+
+              {valuationData && !isValuating && (
+                <div className="space-y-4 animate-in fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-4 bg-[#F9F9FB] border border-[#E2E8F0] rounded-2xl">
+                      <span className="text-[10px] font-mono-code text-[#76777D] uppercase">
+                        Current Estimated Value
+                      </span>
+                      <p className="text-2xl font-bold font-mono-code text-[#0F172A] mt-1">
+                        ${valuationData.estimatedCurrentValue?.toLocaleString() || '0'}
+                      </p>
+                      <p className="text-[11px] text-[#76777D] mt-0.5">
+                        Original: ${purchase.price.toFixed(2)}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-[#F9F9FB] border border-[#E2E8F0] rounded-2xl">
+                      <span className="text-[10px] font-mono-code text-[#76777D] uppercase">
+                        Total Depreciation
+                      </span>
+                      <p className="text-2xl font-bold font-mono-code text-[#DC2626] mt-1">
+                        -{valuationData.depreciationPercentage}%
+                      </p>
+                      <p className="text-[11px] text-[#76777D] mt-0.5">
+                        Rate: {valuationData.annualDepreciationRate || '18%/yr'}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-[#F9F9FB] border border-[#E2E8F0] rounded-2xl">
+                      <span className="text-[10px] font-mono-code text-[#76777D] uppercase">
+                        Condition Grade
+                      </span>
+                      <p className="text-2xl font-bold font-mono-code text-[#0F172A] mt-1">
+                        {valuationData.conditionGrade || 'A-'}
+                      </p>
+                      <p className="text-[11px] text-[#76777D] mt-0.5">
+                        Demand: {valuationData.marketTrend || 'High'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-white border border-[#E2E8F0] rounded-2xl space-y-2 text-[13px]">
+                    <h4 className="font-semibold text-[#0F172A] text-[12px] font-mono-code uppercase text-[#76777D] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#0F172A]" />
+                      AI Resale Recommendation
+                    </h4>
+                    <p className="text-[#0F172A] font-medium">
+                      {valuationData.recommendedResaleWindow || 'Optimal listing window: Next 3 months'}
+                    </p>
+                    <p className="text-[#45464D] leading-relaxed text-[12px]">
+                      {valuationData.resaleAdvice}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
