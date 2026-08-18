@@ -14,10 +14,19 @@ import { AIClaimModal } from './components/AIClaimModal';
 import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/SettingsModal';
 import { AIChatDrawer } from './components/AIChatDrawer';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './context/AuthContext';
 import { ActiveView, PurchaseItem, AIActionItem } from './types';
 import { INITIAL_PURCHASES, INITIAL_ACTIONS } from './data/mockData';
+import {
+  subscribePurchases,
+  addPurchaseToDb,
+  deletePurchaseFromDb,
+  seedPurchasesIfEmpty
+} from './services/purchaseService';
 
 export function App() {
+  const { user } = useAuth();
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [purchases, setPurchases] = useState<PurchaseItem[]>(() => {
     try {
@@ -35,7 +44,9 @@ export function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<PurchaseItem | null>(null);
+  const [dbConnected, setDbConnected] = useState<boolean>(true);
 
   const [claimModalState, setClaimModalState] = useState<{
     isOpen: boolean;
@@ -47,7 +58,28 @@ export function App() {
     mode: 'warranty_claim',
   });
 
-  // Persist purchases
+  // Subscribe to real-time Firestore database updates (user-scoped)
+  useEffect(() => {
+    const userId = user?.uid;
+    seedPurchasesIfEmpty(INITIAL_PURCHASES, userId);
+
+    const unsubscribe = subscribePurchases(
+      (items) => {
+        if (items && items.length > 0) {
+          setPurchases(items);
+        }
+        setDbConnected(true);
+      },
+      (_error) => {
+        setDbConnected(false);
+      },
+      userId
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  // Persist purchases locally as fallback cache
   useEffect(() => {
     try {
       localStorage.setItem('keepr_purchases_v1', JSON.stringify(purchases));
@@ -68,12 +100,22 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleAddPurchase = (newPurchase: PurchaseItem) => {
+  const handleAddPurchase = async (newPurchase: PurchaseItem) => {
     setPurchases((prev) => [newPurchase, ...prev]);
+    try {
+      await addPurchaseToDb(newPurchase, user?.uid);
+    } catch (err) {
+      console.warn('Failed to sync new purchase to Firestore (using local state):', err);
+    }
   };
 
-  const handleDeletePurchase = (id: string) => {
+  const handleDeletePurchase = async (id: string) => {
     setPurchases((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await deletePurchaseFromDb(id, user?.uid);
+    } catch (err) {
+      console.warn('Failed to delete purchase from Firestore (using local state):', err);
+    }
   };
 
   const handleTriggerClaim = (purchase: PurchaseItem) => {
@@ -105,6 +147,7 @@ export function App() {
         setActiveView={setActiveView}
         riskCount={riskCount}
         openScanner={() => setIsScannerOpen(true)}
+        openAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -120,6 +163,8 @@ export function App() {
           setActiveView={setActiveView}
           openSettings={() => setIsSettingsOpen(true)}
           riskCount={riskCount}
+          dbConnected={dbConnected}
+          openAuthModal={() => setIsAuthModalOpen(true)}
         />
 
         {/* Viewport Screen with smooth scrolling */}
@@ -251,6 +296,11 @@ export function App() {
         onSelectPurchase={(item) => setSelectedPurchase(item)}
         onTriggerClaim={handleTriggerClaim}
         onTriggerReturn={handleTriggerReturn}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
     </div>
   );

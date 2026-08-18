@@ -11,14 +11,18 @@ import {
   HelpCircle,
   Box,
   Sparkles,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { ActiveView } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
   riskCount: number;
   openScanner: () => void;
+  openAuthModal?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,7 +30,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveView,
   riskCount,
   openScanner,
+  openAuthModal,
 }) => {
+  const { user, logout } = useAuth();
   const navItems = [
     { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchases' as ActiveView, label: 'Purchases', icon: ShoppingBag },
@@ -142,16 +148,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User profile capsule */}
       <div className="mt-3 pt-3 border-t border-[#E2E8F0] flex items-center justify-between px-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-[#E2E8F0] border border-[#CBD5E1] flex items-center justify-center text-[12px] font-semibold text-[#0F172A]">
-            A
+        {user ? (
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
+                {user.displayName
+                  ? user.displayName.slice(0, 2).toUpperCase()
+                  : user.email
+                  ? user.email.slice(0, 2).toUpperCase()
+                  : 'U'}
+              </div>
+            )}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[12px] font-medium text-[#0F172A] leading-none truncate">
+                {user.displayName || 'User Account'}
+              </span>
+              <span className="text-[10px] font-mono-code text-[#76777D] mt-0.5 truncate">
+                {user.email}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[12px] font-medium text-[#0F172A] leading-none">Alex Morgan</span>
-            <span className="text-[10px] font-mono-code text-[#76777D] mt-0.5">alex@keepr.ai</span>
-          </div>
-        </div>
-        <span className="w-2 h-2 rounded-full bg-[#10B981]" title="Gemini 3.7 Online" />
+        ) : (
+          <button
+            onClick={openAuthModal}
+            className="w-full py-1.5 px-3 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] rounded-xl text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In to Sync</span>
+          </button>
+        )}
       </div>
     </aside>
   );
