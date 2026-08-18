@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles } from 'lucide-react';
+import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles, User as UserIcon, LogOut, LogIn } from 'lucide-react';
 import { ActiveView } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface TopBarProps {
   searchQuery: string;
@@ -12,6 +13,8 @@ interface TopBarProps {
   setActiveView: (view: ActiveView) => void;
   openSettings: () => void;
   riskCount: number;
+  dbConnected?: boolean;
+  openAuthModal: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -24,9 +27,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   setActiveView,
   openSettings,
   riskCount,
+  dbConnected = true,
+  openAuthModal,
 }) => {
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
     <header className="bg-[#FFFFFF] border-b border-[#E2E8F0] flex justify-between items-center w-full px-4 md:px-6 h-16 shrink-0 z-30 sticky top-0 rounded-t-2xl">
@@ -72,6 +79,15 @@ export const TopBar: React.FC<TopBarProps> = ({
 
       {/* Right side: Actions */}
       <div className="flex items-center gap-2.5">
+        {/* Firebase Firestore Status Pill */}
+        <div 
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-[11px] font-mono-code text-[#475569]"
+          title={dbConnected ? "Firebase Firestore connected & listening in real-time" : "Firebase operating in local fallback mode"}
+        >
+          <span className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <span>{dbConnected ? 'Firestore Live' : 'Offline Cache'}</span>
+        </div>
+
         {/* Ask Keepr AI Assistant */}
         <button
           onClick={openAIChat}
@@ -183,10 +199,73 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Settings className="w-4 h-4" />
         </button>
 
-        {/* User profile avatar */}
-        <div className="w-8 h-8 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[12px] font-semibold tracking-wider ml-1 border border-[#CBD5E1]">
-          AM
-        </div>
+        {/* User profile avatar & Authentication */}
+        {user ? (
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'User'}
+                  className="w-8 h-8 rounded-full border border-slate-300 object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[12px] font-semibold tracking-wider border border-slate-300">
+                  {user.displayName
+                    ? user.displayName.slice(0, 2).toUpperCase()
+                    : user.email
+                    ? user.email.slice(0, 2).toUpperCase()
+                    : 'U'}
+                </div>
+              )}
+            </button>
+
+            {/* User Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-1">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-semibold text-slate-900 truncate">
+                    {user.displayName || 'Account User'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    openSettings();
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <Settings className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Account Settings</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-500" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={openAuthModal}
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </button>
+        )}
       </div>
 
       {/* Mobile Drawer */}
