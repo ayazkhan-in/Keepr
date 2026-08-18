@@ -138,8 +138,8 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 self-end md:self-center">
-                  <div className="text-right">
+                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0">
+                  <div className="text-left sm:text-right">
                     <p className="font-mono-code text-[14px] font-semibold text-[#0F172A]">
                       ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
@@ -152,7 +152,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                       e.stopPropagation();
                       onTriggerReturn(item);
                     }}
-                    className="bg-[#0F172A] text-white px-4 py-2 rounded-xl text-[12px] font-medium hover:bg-[#1E293B] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    className="bg-[#0F172A] text-white px-3.5 py-2 rounded-xl text-[12px] font-medium hover:bg-[#1E293B] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto sm:ml-0"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Draft Return Email</span>

@@ -209,7 +209,7 @@ export function App() {
       initial={{ opacity: 0, scale: 0.98, filter: 'blur(12px)' }}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="flex h-screen w-full text-[#1A1C1D] overflow-hidden font-sans p-3 md:p-3.5 gap-3.5 bg-cover bg-center bg-no-repeat"
+      className="flex h-[100dvh] w-full text-[#1A1C1D] overflow-hidden font-sans p-1.5 sm:p-2.5 md:p-3.5 gap-2 md:gap-3.5 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
       {/* Floating Left Sidebar */}
@@ -227,7 +227,7 @@ export function App() {
         initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
-        className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] shadow-sm"
+        className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-xl sm:rounded-2xl border border-[#E2E8F0] shadow-sm"
       >
         {/* Top Bar */}
         <TopBar
@@ -246,7 +246,7 @@ export function App() {
         />
 
         {/* Viewport Screen with smooth scrolling & blur transition between tabs */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeView}

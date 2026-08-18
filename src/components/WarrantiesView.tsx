@@ -160,7 +160,8 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
         </div>
 
         <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-[#FAFAFC] border-b border-[#E2E8F0]">
               <tr>
                 <th className="font-mono-code text-[11px] text-[#76777D] uppercase py-3 px-4 font-semibold">
@@ -231,7 +232,8 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
             </tbody>
           </table>
         </div>
-      </motion.section>
+      </div>
+    </motion.section>
 
       {/* Visual Interactive 12-Month Timeline */}
       <motion.section
