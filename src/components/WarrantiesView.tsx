@@ -10,6 +10,8 @@ import {
   Calendar,
   AlertTriangle,
   FileCheck,
+  Mail,
+  Check,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
 
@@ -27,6 +29,34 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
   onTriggerReturn,
 }) => {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [alertingItemId, setAlertingItemId] = useState<string | null>(null);
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
+
+  const handleSendDirectAlert = async (item: PurchaseItem, daysLeft: number) => {
+    setAlertingItemId(item.id);
+    setToastNotice(null);
+    try {
+      const res = await fetch('/api/warranty/send-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchase: item,
+          daysLeft: daysLeft,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastNotice(`✅ Warranty Email Alert sent for ${item.name}!`);
+      } else {
+        setToastNotice(`⚠️ ${data.error || 'Failed to send alert'}`);
+      }
+    } catch (err) {
+      setToastNotice('⚠️ Network error sending alert email');
+    } finally {
+      setAlertingItemId(null);
+      setTimeout(() => setToastNotice(null), 4000);
+    }
+  };
 
   // Filter items with warranties
   const warrantyItems = purchases.filter((p) => p.warranty.hasWarranty);
@@ -150,6 +180,12 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
         transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
         className="space-y-3"
       >
+        {toastNotice && (
+          <div className="p-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl text-xs font-mono-code text-[#1E40AF] flex items-center gap-2">
+            <span>{toastNotice}</span>
+          </div>
+        )}
+
         <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-2">
           <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
             Active Warranties ({warrantyItems.length})
@@ -218,12 +254,27 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
                       {days > 365 ? `${Math.round(days / 365)} Years` : `${days} Days`}
                     </td>
                     <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => onTriggerClaim(item)}
-                        className="text-[12px] text-[#0F172A] font-medium hover:underline bg-[#F9F9FB] border border-[#E2E8F0] px-3 py-1.5 rounded-xl cursor-pointer"
-                      >
-                        Claim RMA
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleSendDirectAlert(item, days)}
+                          disabled={alertingItemId === item.id}
+                          className="text-[12px] text-[#0F172A] font-medium hover:bg-[#F1F5F9] bg-[#F9F9FB] border border-[#E2E8F0] px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          title="Send Email Alert for this Item"
+                        >
+                          {alertingItemId === item.id ? (
+                            <div className="w-3 h-3 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin" />
+                          ) : (
+                            <Mail className="w-3.5 h-3.5 text-[#2563EB]" />
+                          )}
+                          <span>Email Alert</span>
+                        </button>
+                        <button
+                          onClick={() => onTriggerClaim(item)}
+                          className="text-[12px] text-[#0F172A] font-medium hover:underline bg-[#F9F9FB] border border-[#E2E8F0] px-3 py-1.5 rounded-xl cursor-pointer"
+                        >
+                          Claim RMA
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

@@ -151,6 +151,23 @@ export function App() {
     } catch (err) {
       console.warn('Failed to sync new purchase to Firestore (using local state):', err);
     }
+
+    // Automatically send an instant email alert if product has a warranty or return deadline
+    if (newPurchase.warranty?.hasWarranty || newPurchase.returnWindow?.hasReturn) {
+      try {
+        const recipientEmail = user?.email || 'onboarding@resend.dev';
+        fetch('/api/warranty/send-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            purchase: newPurchase,
+            recipientEmail: recipientEmail,
+          }),
+        }).catch((e) => console.warn('Instant warranty/return email alert notice:', e.message));
+      } catch (e) {
+        console.warn('Failed to trigger instant email:', e);
+      }
+    }
   };
 
   const handleDeletePurchase = async (id: string) => {

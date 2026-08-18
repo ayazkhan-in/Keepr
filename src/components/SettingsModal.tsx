@@ -22,6 +22,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [returnReminders, setReturnReminders] = useState('3 days before');
   const [warrantyReminders, setWarrantyReminders] = useState('14 days before');
   const [saved, setSaved] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailAddress.trim()) {
+      setTestEmailStatus('⚠️ Please enter your recipient email address first.');
+      return;
+    }
+
+    setIsSendingTestEmail(true);
+    setTestEmailStatus(null);
+    try {
+      const res = await fetch('/api/warranty/send-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: testEmailAddress.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestEmailStatus(`✅ Email sent to ${testEmailAddress.trim()} via Resend!`);
+      } else {
+        setTestEmailStatus(`❌ ${data.error || 'Failed to send'}`);
+      }
+    } catch (err: any) {
+      setTestEmailStatus('❌ Network error sending test email');
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
 
   const handleSave = () => {
     setSaved(true);
@@ -146,6 +178,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <span className="font-mono-code text-[10px] bg-[#ECFDF5] text-[#065F46] px-2.5 py-0.5 rounded-full border border-[#A7F3D0]">
                 Connected
               </span>
+            </div>
+          </div>
+
+          {/* LangChain + Resend Email Intelligence */}
+          <div className="space-y-2">
+            <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
+              LangChain & Resend Email Alerts
+            </h4>
+            <div className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-3">
+              <div>
+                <p className="font-medium text-[#0F172A] text-xs">Automated Expiry Email Engine</p>
+                <p className="text-[11px] text-[#76777D]">Powered by LangChain LLM & Resend Transactional Email</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={testEmailAddress}
+                  onChange={(e) => setTestEmailAddress(e.target.value)}
+                  placeholder="Enter your email address..."
+                  className="flex-1 px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#0F172A] focus:outline-none focus:border-[#0F172A]"
+                />
+                <button
+                  onClick={handleSendTestEmail}
+                  disabled={isSendingTestEmail}
+                  className="px-3 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {isSendingTestEmail ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>Send Test Email</span>
+                  )}
+                </button>
+              </div>
+
+              {testEmailStatus && (
+                <p className="text-[11px] font-mono-code pt-1 border-t border-[#E2E8F0]">
+                  {testEmailStatus}
+                </p>
+              )}
             </div>
           </div>
         </div>
