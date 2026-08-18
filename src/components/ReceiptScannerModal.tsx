@@ -43,10 +43,35 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [showRawInspector, setShowRawInspector] = useState<boolean>(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Reset all state when closing or scanning a new item
+  const resetState = () => {
+    setExtractedData(null);
+    setPreviewBase64(null);
+    setSelectedFile(null);
+    setPastedText('');
+    setIsScanning(false);
+    setScanStep('');
+    setShowRawInspector(false);
+    setQuotaWarning(null);
+    stopCamera();
+  };
+
+  const handleCloseModal = () => {
+    resetState();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    }
+  }, [isOpen]);
 
   // Stop camera when unmounting or switching tab or closing
   useEffect(() => {
@@ -180,7 +205,8 @@ Return Window: 30 Days return policy`;
 
   const triggerAIScan = async (base64?: string, mimeType?: string, textContext?: string) => {
     setIsScanning(true);
-    setScanStep('Analyzing document structure with Gemini 3.7 Flash...');
+    setScanStep('Analyzing document structure with Gemini 3.6 Flash...');
+    setQuotaWarning(null);
 
     try {
       setTimeout(() => setScanStep('Extracting itemized pricing, serial IDs & vendors...'), 500);
@@ -199,6 +225,9 @@ Return Window: 30 Days return policy`;
       const data = await res.json();
       if (data.success && data.extracted) {
         setExtractedData(data.extracted);
+        if (data.quotaExhausted || data.warning) {
+          setQuotaWarning(data.warning || 'Gemini 3.6 Flash daily API quota was reached. Smart heuristic extraction was used so you can keep saving purchases without interruption.');
+        }
       }
     } catch (err) {
       console.error('Scan error:', err);
@@ -272,6 +301,7 @@ Return Window: 30 Days return policy`;
     };
 
     onSavePurchase(newPurchase);
+    resetState();
     onClose();
   };
 
@@ -289,12 +319,12 @@ Return Window: 30 Days return policy`;
                 AI Receipt & Invoice Ingestion
               </h3>
               <p className="text-[11px] text-[#76777D]">
-                Powered by Gemini 3.7 Flash OCR & Purchase Metadata Extractor
+                Powered by Gemini 3.6 Flash OCR & Purchase Metadata Extractor
               </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="p-1.5 rounded-lg text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -303,6 +333,16 @@ Return Window: 30 Days return policy`;
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          {quotaWarning && (
+            <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-950">Gemini 3.6 Flash API Notice</p>
+                <p className="text-amber-800 text-[11px] mt-0.5">{quotaWarning}</p>
+              </div>
+            </div>
+          )}
+
           {!extractedData && !isScanning && (
             <div>
               {/* Input Mode Selector */}
@@ -684,10 +724,7 @@ Return Window: 30 Days return policy`;
         <div className="p-4 border-t border-[#E2E8F0] flex justify-between items-center bg-white">
           {extractedData ? (
             <button
-              onClick={() => {
-                setExtractedData(null);
-                setPreviewBase64(null);
-              }}
+              onClick={resetState}
               className="text-[12px] text-[#76777D] hover:text-[#0F172A] font-medium cursor-pointer"
             >
               ← Scan Another Document
@@ -700,7 +737,7 @@ Return Window: 30 Days return policy`;
 
           <div className="flex items-center gap-2">
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="px-4 py-2 text-[12px] font-medium text-[#45464D] hover:bg-[#F9F9FB] rounded-xl cursor-pointer"
             >
               Cancel

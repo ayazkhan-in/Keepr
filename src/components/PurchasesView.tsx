@@ -23,6 +23,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PurchaseItem, CategoryType } from '../types';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface PurchasesViewProps {
   purchases: PurchaseItem[];
@@ -49,6 +50,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Filter purchases
   const filtered = purchases.filter((item) => {
@@ -444,7 +446,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
                               <button
                                 onClick={() => {
                                   setActiveMenuId(null);
-                                  onDeletePurchase(item.id);
+                                  setItemToDelete({ id: item.id, name: item.name });
                                 }}
                                 className="w-full text-left px-3 py-1.5 text-[12px] text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 cursor-pointer"
                               >
@@ -528,6 +530,18 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
           ))}
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={Boolean(itemToDelete)}
+        itemName={itemToDelete?.name}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete) {
+            onDeletePurchase(itemToDelete.id);
+          }
+          setItemToDelete(null);
+        }}
+      />
     </div>
   );
 };

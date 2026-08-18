@@ -139,7 +139,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 Ask Keepr AI
               </h3>
               <p className="text-[11px] text-[#76777D]">
-                Gemini 3.7 Flash Purchase Intelligence
+                Gemini 3.6 Flash Purchase Intelligence
               </p>
             </div>
           </div>

@@ -127,7 +127,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-[#0F172A]" />
                 <div>
-                  <p className="font-medium text-[#0F172A]">Gemini 3.7 Flash Model</p>
+                  <p className="font-medium text-[#0F172A]">Gemini 3.6 Flash Model</p>
                   <p className="text-[11px] text-[#76777D]">Active backend OCR & Purchase Parser</p>
                 </div>
               </div>

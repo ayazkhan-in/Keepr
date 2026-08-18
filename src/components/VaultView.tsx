@@ -17,19 +17,23 @@ import {
   AlertTriangle,
   FileSearch,
   Copy,
+  Trash2,
 } from 'lucide-react';
 import { PurchaseItem, DocumentItem } from '../types';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface VaultViewProps {
   purchases: PurchaseItem[];
   openScanner: () => void;
   onSelectPurchase: (item: PurchaseItem) => void;
+  onDeletePurchase?: (id: string) => void;
 }
 
 export const VaultView: React.FC<VaultViewProps> = ({
   purchases,
   openScanner,
   onSelectPurchase,
+  onDeletePurchase,
 }) => {
   const [activeType, setActiveType] = useState<string>('all');
   const [vaultSearch, setVaultSearch] = useState<string>('');
@@ -37,6 +41,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
     doc: DocumentItem;
     purchase: PurchaseItem;
   } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // AI Audit State
   const [isAuditing, setIsAuditing] = useState<boolean>(false);
@@ -299,6 +304,15 @@ TAX & COMPLIANCE:
                   >
                     <Download className="w-3.5 h-3.5" />
                   </button>
+                  {onDeletePurchase && (
+                    <button
+                      onClick={() => setItemToDelete({ id: item.purchase.id, name: `${item.name} (${item.purchase.name})` })}
+                      className="p-1.5 text-[#94A3B8] hover:text-[#DC2626] rounded-lg hover:bg-[#FEF2F2] transition-colors cursor-pointer"
+                      title="Delete Receipt / Record"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -467,6 +481,15 @@ TAX & COMPLIANCE:
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
               <div className="flex items-center gap-2">
+                {onDeletePurchase && (
+                  <button
+                    onClick={() => setItemToDelete({ id: previewDoc.purchase.id, name: `${previewDoc.doc.name} (${previewDoc.purchase.name})` })}
+                    className="p-2 text-[#DC2626] hover:bg-[#FEF2F2] rounded-xl transition-colors cursor-pointer"
+                    title="Delete Receipt / Record"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 {auditResult && (
                   <button
                     onClick={handleCopyAuditReport}
@@ -488,6 +511,21 @@ TAX & COMPLIANCE:
           </div>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={Boolean(itemToDelete)}
+        itemName={itemToDelete?.name}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete && onDeletePurchase) {
+            onDeletePurchase(itemToDelete.id);
+          }
+          if (previewDoc && itemToDelete && previewDoc.purchase.id === itemToDelete.id) {
+            setPreviewDoc(null);
+          }
+          setItemToDelete(null);
+        }}
+      />
     </div>
   );
 };

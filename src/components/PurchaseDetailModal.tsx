@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface PurchaseDetailModalProps {
   purchase: PurchaseItem | null;
@@ -42,6 +43,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'valuation' | 'warranty' | 'return' | 'documents'>('overview');
   const [valuationData, setValuationData] = useState<any>(null);
   const [isValuating, setIsValuating] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   useEffect(() => {
     if (activeTab === 'valuation' && purchase && !valuationData) {
@@ -97,12 +99,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (confirm(`Are you sure you want to delete ${purchase.name}?`)) {
-                  onDelete(purchase.id);
-                  onClose();
-                }
-              }}
+              onClick={() => setShowDeleteConfirm(true)}
               className="p-2 text-[#94A3B8] hover:text-[#DC2626] rounded-xl hover:bg-[#FEF2F2] transition-colors cursor-pointer"
               title="Delete Purchase"
             >
@@ -116,6 +113,17 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
             </button>
           </div>
         </div>
+
+        <DeleteConfirmationModal
+          isOpen={showDeleteConfirm}
+          itemName={purchase.name}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={() => {
+            onDelete(purchase.id);
+            setShowDeleteConfirm(false);
+            onClose();
+          }}
+        />
 
         {/* Tab Switcher */}
         <div className="border-b border-[#E2E8F0] px-5 flex gap-4 bg-white text-[13px] font-medium overflow-x-auto">
@@ -221,7 +229,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                     Estimating secondary market value & depreciation curves...
                   </p>
                   <p className="text-[11px] text-[#76777D] font-mono-code">
-                    Gemini 3.7 Flash Asset Valuation Engine
+                    Gemini 3.6 Flash Asset Valuation Engine
                   </p>
                 </div>
               )}

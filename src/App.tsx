@@ -217,6 +217,7 @@ export function App() {
               purchases={purchases}
               openScanner={() => setIsScannerOpen(true)}
               onSelectPurchase={(item) => setSelectedPurchase(item)}
+              onDeletePurchase={handleDeletePurchase}
             />
           )}
 
