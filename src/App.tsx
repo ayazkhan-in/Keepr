@@ -15,6 +15,8 @@ import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/SettingsModal';
 import { AIChatDrawer } from './components/AIChatDrawer';
 import { AuthModal } from './components/AuthModal';
+import { LandingPage } from './components/LandingPage';
+import { AuthPage } from './components/AuthPage';
 import { useAuth } from './context/AuthContext';
 import { ActiveView, PurchaseItem, AIActionItem } from './types';
 import { INITIAL_PURCHASES, INITIAL_ACTIONS } from './data/mockData';
@@ -25,8 +27,42 @@ import {
   seedPurchasesIfEmpty
 } from './services/purchaseService';
 
+type AppRoute = 'landing' | 'auth' | 'app';
+
 export function App() {
   const { user } = useAuth();
+
+  // Route state: default to 'landing'
+  const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#app') return 'app';
+      if (window.location.hash === '#auth') return 'auth';
+    }
+    return 'landing';
+  });
+
+  const navigateTo = (route: AppRoute) => {
+    setCurrentRoute(route);
+    if (typeof window !== 'undefined') {
+      if (route === 'landing') {
+        window.history.replaceState(null, '', window.location.pathname);
+      } else {
+        window.history.replaceState(null, '', `#${route}`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#app') setCurrentRoute('app');
+      else if (hash === '#auth') setCurrentRoute('auth');
+      else if (hash === '#landing' || hash === '' || hash === '#') setCurrentRoute('landing');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [purchases, setPurchases] = useState<PurchaseItem[]>(() => {
     try {
@@ -139,6 +175,27 @@ export function App() {
     (p) => p.returnWindow.hasReturn && p.returnWindow.status === 'expiring_soon'
   ).length;
 
+  // ROUTE 1: Landing Page (Default)
+  if (currentRoute === 'landing') {
+    return (
+      <LandingPage
+        onNavigateToAuth={() => navigateTo('auth')}
+        onNavigateToApp={() => navigateTo('app')}
+      />
+    );
+  }
+
+  // ROUTE 2: Auth Page
+  if (currentRoute === 'auth') {
+    return (
+      <AuthPage
+        onBackToLanding={() => navigateTo('landing')}
+        onLoginSuccess={() => navigateTo('app')}
+      />
+    );
+  }
+
+  // ROUTE 3: Main Dashboard App
   return (
     <div
       className="flex h-screen w-full text-[#1A1C1D] overflow-hidden font-sans p-3 md:p-3.5 gap-3.5 bg-cover bg-center bg-no-repeat"
@@ -151,6 +208,7 @@ export function App() {
         riskCount={riskCount}
         openScanner={() => setIsScannerOpen(true)}
         openAuthModal={() => setIsAuthModalOpen(true)}
+        onNavigateToLanding={() => navigateTo('landing')}
       />
 
       {/* Main Content Area (Floating Panel) */}
@@ -168,6 +226,7 @@ export function App() {
           riskCount={riskCount}
           dbConnected={dbConnected}
           openAuthModal={() => setIsAuthModalOpen(true)}
+          onNavigateToLanding={() => navigateTo('landing')}
         />
 
         {/* Viewport Screen with smooth scrolling */}
