@@ -9,8 +9,10 @@ import {
   Sparkles,
   ArrowRight,
   ShieldAlert,
+  Coins,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface ReturnsViewProps {
   purchases: PurchaseItem[];
@@ -23,6 +25,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
   onSelectPurchase,
   onTriggerReturn,
 }) => {
+  const { formatPrice } = useCurrency();
   const returnEligibleItems = purchases.filter((p) => p.returnWindow.hasReturn);
   const activeReturns = returnEligibleItems.filter(
     (p) => p.returnWindow.status !== 'closed'
@@ -40,8 +43,9 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
         initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="pb-2 border-b border-[#E2E8F0]"
       >
-        <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#0F172A] tracking-tight">
           Return Deadlines
         </h1>
         <p className="text-[13px] text-[#76777D] mt-1">
@@ -54,31 +58,31 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
         initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-5"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
       >
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex items-center justify-between text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">
               Capital at Risk
             </span>
-            <DollarSign className="w-4 h-4 text-[#94A3B8]" />
+            <Coins className="w-4 h-4 text-[#94A3B8]" />
           </div>
-          <p className="font-mono-code text-2xl md:text-3xl font-semibold text-[#0F172A] mt-2">
-            ${totalAtRisk.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <p className="font-mono-code text-2xl md:text-3xl font-bold text-[#0F172A] mt-2">
+            {formatPrice(totalAtRisk)}
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">
             Across {activeReturns.length} active return windows
           </p>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex items-center justify-between text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">
               Closing This Week
             </span>
             <Clock className="w-4 h-4 text-[#DC2626]" />
           </div>
-          <p className="font-mono-code text-2xl md:text-3xl font-semibold text-[#DC2626] mt-2">
+          <p className="font-mono-code text-2xl md:text-3xl font-bold text-[#DC2626] mt-2">
             2 Items
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">
@@ -86,14 +90,14 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
           </p>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex items-center justify-between text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">
               Return Success Rate
             </span>
             <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
           </div>
-          <p className="font-mono-code text-2xl md:text-3xl font-semibold text-[#0F172A] mt-2">
+          <p className="font-mono-code text-2xl md:text-3xl font-bold text-[#0F172A] mt-2">
             100%
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">
@@ -118,7 +122,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
             <div
               key={item.id}
               onClick={() => onSelectPurchase(item)}
-              className="bg-white border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#94A3B8] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer"
+              className="bg-white border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#94A3B8] transition-all shadow-2xs cursor-pointer"
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-center gap-3.5">
@@ -127,7 +131,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-[14px] text-[#0F172A]">{item.name}</h4>
+                      <h4 className="font-semibold text-[14px] text-[#0F172A]">{item.name}</h4>
                       <span className="font-mono-code text-[10px] bg-[#FEE2E2] text-[#991B1B] px-2.5 py-0.5 rounded-full font-semibold border border-[#FECACA]">
                         CLOSING SOON
                       </span>
@@ -140,8 +144,8 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
 
                 <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full md:w-auto pt-2 md:pt-0">
                   <div className="text-left sm:text-right">
-                    <p className="font-mono-code text-[14px] font-semibold text-[#0F172A]">
-                      ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <p className="font-mono-code text-[14px] font-bold text-[#0F172A]">
+                      {formatPrice(item.price)}
                     </p>
                     <p className="text-[11px] text-[#DC2626] font-mono-code">
                       Deadline: {item.returnWindow.deadlineDate}
@@ -184,7 +188,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
         <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
           Closed Return Windows ({closedReturns.length})
         </h3>
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl divide-y divide-[#F1F5F9] overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl divide-y divide-[#F1F5F9] overflow-hidden shadow-2xs">
           {closedReturns.map((item) => (
             <div
               key={item.id}

@@ -12,6 +12,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface WarrantiesViewProps {
   purchases: PurchaseItem[];
@@ -26,6 +27,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice } = useCurrency();
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   // Filter items with warranties
@@ -81,7 +83,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-[14px] font-medium text-[#0F172A]">Sony WH-1000XM5</h4>
-                  <p className="text-[12px] text-[#76777D]">Amazon Purchase · $398.00</p>
+                  <p className="text-[12px] text-[#76777D]">Amazon Purchase · {formatPrice(398)}</p>
                 </div>
               </div>
               <span className="bg-[#FEE2E2] text-[#991B1B] font-mono-code text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-[#FECACA]">
@@ -115,7 +117,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-[14px] font-medium text-[#0F172A]">Breville Barista Pro</h4>
-                  <p className="text-[12px] text-[#76777D]">Williams Sonoma · $899.95</p>
+                  <p className="text-[12px] text-[#76777D]">Williams Sonoma · {formatPrice(899.95)}</p>
                 </div>
               </div>
               <span className="bg-[#F1F5F9] text-[#475569] font-mono-code text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-[#E2E8F0]">

@@ -22,6 +22,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { PurchaseItem, CategoryType } from '../types';
+import { MinimalSelect } from './ui/MinimalSelect';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -629,21 +631,22 @@ Return Window: 30 Days return policy`;
                   <label className="block text-[#76777D] font-mono-code text-[11px] uppercase mb-1">
                     Category
                   </label>
-                  <select
+                  <MinimalSelect
                     value={extractedData.category || 'Electronics'}
-                    onChange={(e) =>
-                      setExtractedData({ ...extractedData, category: e.target.value })
+                    onChange={(val) =>
+                      setExtractedData({ ...extractedData, category: val as CategoryType })
                     }
-                    className="w-full px-3.5 py-2 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl text-[#0F172A]"
-                  >
-                    <option value="Electronics">Electronics</option>
-                    <option value="Office Furniture">Office Furniture</option>
-                    <option value="Software">Software</option>
-                    <option value="Appliances">Appliances</option>
-                    <option value="Home & Living">Home & Living</option>
-                    <option value="Travel">Travel</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    options={[
+                      { value: 'Electronics', label: 'Electronics' },
+                      { value: 'Office Furniture', label: 'Office Furniture' },
+                      { value: 'Software', label: 'Software' },
+                      { value: 'Appliances', label: 'Appliances' },
+                      { value: 'Home & Living', label: 'Home & Living' },
+                      { value: 'Travel', label: 'Travel' },
+                      { value: 'Other', label: 'Other' },
+                    ]}
+                    fullWidth
+                  />
                 </div>
 
                 <div>

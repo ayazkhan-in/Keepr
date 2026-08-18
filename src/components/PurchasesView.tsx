@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { PurchaseItem, CategoryType } from '../types';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { useCurrency } from '../context/CurrencyContext';
+import { MinimalSelect } from './ui/MinimalSelect';
 
 interface PurchasesViewProps {
   purchases: PurchaseItem[];
@@ -35,6 +37,23 @@ interface PurchasesViewProps {
   onTriggerReturn: (item: PurchaseItem) => void;
 }
 
+const CATEGORY_OPTIONS = [
+  { value: 'All Categories', label: 'All Categories' },
+  { value: 'Electronics', label: 'Electronics' },
+  { value: 'Office Furniture', label: 'Office Furniture' },
+  { value: 'Software', label: 'Software' },
+  { value: 'Appliances', label: 'Appliances' },
+  { value: 'Home & Living', label: 'Home & Living' },
+  { value: 'Other', label: 'Other' },
+];
+
+const TIME_OPTIONS = [
+  { value: 'All Time', label: 'All Time' },
+  { value: 'Last 30 Days', label: 'Last 30 Days' },
+  { value: 'Last 90 Days', label: 'Last 90 Days' },
+  { value: 'This Year', label: 'This Year' },
+];
+
 export const PurchasesView: React.FC<PurchasesViewProps> = ({
   purchases,
   openScanner,
@@ -43,15 +62,23 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice, currency } = useCurrency();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [timeFilter, setTimeFilter] = useState<string>('All Time');
-  const [priceFilter, setPriceFilter] = useState<string>('Any Price');
+  const [priceFilter, setPriceFilter] = useState<string>('all');
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const priceOptions = [
+    { value: 'all', label: 'Any Price' },
+    { value: 'low', label: currency === 'INR' ? 'Under ₹15,000' : 'Under $200' },
+    { value: 'mid', label: currency === 'INR' ? '₹15,000 - ₹80,000' : '$200 - $1,000' },
+    { value: 'high', label: currency === 'INR' ? 'Over ₹80,000' : 'Over $1,000' },
+  ];
 
   // Filter purchases
   const filtered = purchases.filter((item) => {
@@ -68,9 +95,14 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
         item.tags.some((t) => t.toLowerCase().includes(q));
       if (!match) return false;
     }
-    if (priceFilter === 'Under $200' && item.price >= 200) return false;
-    if (priceFilter === '$200 - $1,000' && (item.price < 200 || item.price > 1000)) return false;
-    if (priceFilter === 'Over $1,000' && item.price <= 1000) return false;
+    if (priceFilter === 'low' && item.price >= (currency === 'INR' ? 15000 : 200)) return false;
+    if (
+      priceFilter === 'mid' &&
+      (item.price < (currency === 'INR' ? 15000 : 200) ||
+        item.price > (currency === 'INR' ? 80000 : 1000))
+    )
+      return false;
+    if (priceFilter === 'high' && item.price <= (currency === 'INR' ? 80000 : 1000)) return false;
 
     return true;
   });
@@ -132,46 +164,56 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
         initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-[#E2E8F0]"
       >
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
-            Purchases
+          <div className="flex items-center gap-2">
+            <span className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
+              Asset Ledger
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono-code bg-[#F1F5F9] text-[#0F172A] border border-[#E2E8F0]">
+              {purchases.length} Items Managed
+            </span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#0F172A] tracking-tight mt-0.5">
+            Purchases & Assets
           </h1>
-          <p className="text-[13px] text-[#76777D] mt-1">
-            Manage and track your entire purchase history with AI extraction.
-          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 bg-white border border-[#E2E8F0] text-[#0F172A] px-3.5 py-2 rounded-xl text-[13px] font-medium hover:bg-[#F9F9FB] transition-colors shadow-2xs cursor-pointer"
           >
             <Download className="w-4 h-4 text-[#76777D]" />
-            <span>Export ({selectedIds.length > 0 ? selectedIds.length : 'All'})</span>
+            <span>Export Ledger</span>
           </button>
+
           <button
             onClick={openScanner}
-            className="flex items-center gap-2 bg-[#0F172A] text-white px-3.5 py-2 rounded-xl text-[13px] font-medium hover:bg-[#1E293B] transition-colors shadow-xs group cursor-pointer"
+            className="flex items-center gap-2 bg-[#0F172A] text-white px-3.5 py-2 rounded-xl text-[13px] font-medium hover:bg-[#1E293B] transition-colors shadow-xs cursor-pointer"
           >
-            <Scan className="w-4 h-4 group-hover:rotate-6 transition-transform" />
+            <Scan className="w-4 h-4" />
             <span>Scan Receipt</span>
           </button>
         </div>
       </motion.div>
 
+      {/* Control Bar with Minimal Dropdowns */}
       <motion.div
-        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        initial={{ opacity: 0, y: 8, filter: 'blur(6px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
-        className="bg-white border border-[#E2E8F0] p-2.5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-wrap items-center justify-between gap-2.5"
+        transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
+        className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-3 border border-[#E2E8F0] rounded-2xl shadow-2xs"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center border-r border-[#E2E8F0] pr-2.5 gap-1">
+        {/* Left: View Mode Toggle & Category Dropdown */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl p-0.5">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                viewMode === 'list' ? 'bg-[#F1F5F9] text-[#0F172A]' : 'text-[#94A3B8] hover:text-[#0F172A]'
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-white text-[#0F172A] shadow-2xs'
+                  : 'text-[#94A3B8] hover:text-[#0F172A]'
               }`}
               title="List View"
             >
@@ -179,8 +221,10 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                viewMode === 'grid' ? 'bg-[#F1F5F9] text-[#0F172A]' : 'text-[#94A3B8] hover:text-[#0F172A]'
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-white text-[#0F172A] shadow-2xs'
+                  : 'text-[#94A3B8] hover:text-[#0F172A]'
               }`}
               title="Grid View"
             >
@@ -188,59 +232,42 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
             </button>
           </div>
 
-          {/* Category Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-transparent border-none text-[13px] font-medium text-[#0F172A] pl-2 pr-7 py-1 focus:ring-0 cursor-pointer appearance-none"
-            >
-              <option value="All Categories">All Categories</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Office Furniture">Office Furniture</option>
-              <option value="Software">Software</option>
-              <option value="Appliances">Appliances</option>
-              <option value="Home & Living">Home & Living</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+          {/* Category Minimal Dropdown */}
+          <MinimalSelect
+            value={selectedCategory}
+            onChange={(val) => setSelectedCategory(val)}
+            options={CATEGORY_OPTIONS}
+            size="md"
+          />
 
           {/* Search box inside filter */}
-          <div className="hidden sm:flex items-center bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl px-2.5 py-1.5 w-44 shadow-2xs">
-            <Search className="w-3.5 h-3.5 text-[#94A3B8] mr-1.5" />
+          <div className="flex items-center bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl px-2.5 py-1.5 w-48 shadow-2xs">
+            <Search className="w-3.5 h-3.5 text-[#94A3B8] mr-1.5 shrink-0" />
             <input
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Filter..."
+              placeholder="Search receipts..."
               className="bg-transparent text-[12px] w-full focus:outline-none placeholder:text-[#94A3B8]"
             />
           </div>
         </div>
 
         {/* Right: Date, Price, AI Insights Toggle */}
-        <div className="flex items-center gap-2">
-          <select
+        <div className="flex items-center gap-2 flex-wrap">
+          <MinimalSelect
             value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-            className="text-[12px] text-[#45464D] border border-[#E2E8F0] bg-[#F9F9FB] px-3 py-1.5 rounded-xl hover:border-[#94A3B8] transition-colors focus:ring-0 cursor-pointer font-medium"
-          >
-            <option value="All Time">All Time</option>
-            <option value="Last 30 Days">Last 30 Days</option>
-            <option value="Last 90 Days">Last 90 Days</option>
-            <option value="This Year">This Year</option>
-          </select>
+            onChange={(val) => setTimeFilter(val)}
+            options={TIME_OPTIONS}
+            size="md"
+          />
 
-          <select
+          <MinimalSelect
             value={priceFilter}
-            onChange={(e) => setPriceFilter(e.target.value)}
-            className="text-[12px] text-[#45464D] border border-[#E2E8F0] bg-[#F9F9FB] px-3 py-1.5 rounded-xl hover:border-[#94A3B8] transition-colors focus:ring-0 cursor-pointer font-medium"
-          >
-            <option value="Any Price">Any Price</option>
-            <option value="Under $200">Under $200</option>
-            <option value="$200 - $1,000">$200 - $1,000</option>
-            <option value="Over $1,000">Over $1,000</option>
-          </select>
+            onChange={(val) => setPriceFilter(val)}
+            options={priceOptions}
+            size="md"
+          />
 
           <button
             onClick={() => setShowAIInsights(!showAIInsights)}
@@ -264,7 +291,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
             animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
             exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl relative ai-border-subtle overflow-hidden"
+            className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl relative overflow-hidden"
           >
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-[#0F172A]" />
@@ -272,20 +299,20 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
                 Purchase Intelligence Summary
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-[12px] text-[#45464D]">
-              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[12px] text-[#45464D]">
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
                 <p className="font-semibold text-[#0F172A]">Tax Deductions Identified</p>
                 <p className="mt-0.5 text-[#76777D]">
-                  5 hardware items ($7,389.50) marked tax deductible for FY2023.
+                  5 hardware items ({formatPrice(7389.5)}) marked tax deductible for FY2026.
                 </p>
               </div>
-              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
                 <p className="font-semibold text-[#0F172A]">Warranty Coverage Rate</p>
                 <p className="mt-0.5 text-[#76777D]">
                   87.5% of electronic hardware currently protected under valid warranty.
                 </p>
               </div>
-              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
                 <p className="font-semibold text-[#0F172A]">Return Velocity</p>
                 <p className="mt-0.5 text-[#76777D]">
                   2 items eligible for full refund within the next 48-72 hours.
@@ -389,8 +416,8 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="font-mono-code text-[13px] font-medium text-[#0F172A]">
-                          ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="font-mono-code text-[13px] font-semibold text-[#0F172A]">
+                          {formatPrice(item.price)}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -529,7 +556,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
                     {getItemIcon(item.category)}
                   </div>
                   <span className="font-mono-code text-[14px] font-semibold text-[#0F172A]">
-                    ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    {formatPrice(item.price)}
                   </span>
                 </div>
                 <h3 className="font-medium text-[14px] text-[#0F172A] line-clamp-1">{item.name}</h3>

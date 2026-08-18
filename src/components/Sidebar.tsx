@@ -15,6 +15,8 @@ import {
   LogOut,
   Globe,
   User as UserIcon,
+  FileSpreadsheet,
+  FilePlus2,
 } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchases' as ActiveView, label: 'Purchases', icon: ShoppingBag },
+    { id: 'invoices' as ActiveView, label: 'Invoices', icon: FileSpreadsheet },
+    { id: 'create-invoice' as ActiveView, label: 'Create Invoice', icon: FilePlus2 },
     {
       id: 'warranties' as ActiveView,
       label: 'Warranties',

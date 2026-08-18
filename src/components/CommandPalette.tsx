@@ -12,6 +12,8 @@ import {
   ArrowRight,
   X,
   Loader2,
+  FileSpreadsheet,
+  FilePlus2,
 } from 'lucide-react';
 import { PurchaseItem, ActiveView } from '../types';
 
@@ -92,6 +94,22 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     icon: any;
     action: () => void;
   }> = [
+    {
+      label: 'Create New Invoice (PDF)',
+      icon: FilePlus2,
+      action: () => {
+        setActiveView('create-invoice');
+        onClose();
+      },
+    },
+    {
+      label: 'View Invoices & Billing History',
+      icon: FileSpreadsheet,
+      action: () => {
+        setActiveView('invoices');
+        onClose();
+      },
+    },
     {
       label: 'Scan & Ingest Receipt (AI)',
       icon: Sparkles,

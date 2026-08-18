@@ -16,17 +16,27 @@ import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/SettingsModal';
 import { AIChatDrawer } from './components/AIChatDrawer';
 import { AuthModal } from './components/AuthModal';
+import { CreateInvoiceView } from './components/CreateInvoiceView';
+import { InvoicesView } from './components/InvoicesView';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { useAuth } from './context/AuthContext';
-import { ActiveView, PurchaseItem, AIActionItem } from './types';
+import { ActiveView, PurchaseItem, AIActionItem, Invoice, InvoiceStatus } from './types';
 import { INITIAL_PURCHASES, INITIAL_ACTIONS } from './data/mockData';
+import { INITIAL_INVOICES } from './data/mockInvoices';
 import {
   subscribePurchases,
   addPurchaseToDb,
   deletePurchaseFromDb,
   seedPurchasesIfEmpty
 } from './services/purchaseService';
+import {
+  subscribeInvoices,
+  addInvoiceToDb,
+  updateInvoiceInDb,
+  deleteInvoiceFromDb,
+  seedInvoicesIfEmpty
+} from './services/invoiceService';
 
 type AppRoute = 'landing' | 'auth' | 'app';
 
@@ -82,6 +92,17 @@ export function App() {
     return INITIAL_PURCHASES;
   });
 
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const saved = localStorage.getItem('keepr_invoices_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_INVOICES;
+  });
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+
   const [actions, setActions] = useState<AIActionItem[]>(INITIAL_ACTIONS);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -106,8 +127,9 @@ export function App() {
   useEffect(() => {
     const userId = user?.uid;
     seedPurchasesIfEmpty(INITIAL_PURCHASES, userId);
+    seedInvoicesIfEmpty(INITIAL_INVOICES, userId);
 
-    const unsubscribe = subscribePurchases(
+    const unsubscribePurchases = subscribePurchases(
       (items) => {
         if (items && items.length > 0) {
           setPurchases(items);
@@ -120,7 +142,22 @@ export function App() {
       userId
     );
 
-    return () => unsubscribe();
+    const unsubscribeInvoices = subscribeInvoices(
+      (items) => {
+        if (items && items.length > 0) {
+          setInvoices(items);
+        }
+      },
+      (err) => {
+        console.warn('Invoices sync error:', err);
+      },
+      userId
+    );
+
+    return () => {
+      unsubscribePurchases();
+      unsubscribeInvoices();
+    };
   }, [user?.uid]);
 
   // Persist purchases locally as fallback cache
@@ -131,6 +168,15 @@ export function App() {
       console.error(e);
     }
   }, [purchases]);
+
+  // Persist invoices locally as fallback cache
+  useEffect(() => {
+    try {
+      localStorage.setItem('keepr_invoices_v1', JSON.stringify(invoices));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [invoices]);
 
   // Global keyboard shortcut for Command Palette
   useEffect(() => {
@@ -159,6 +205,60 @@ export function App() {
       await deletePurchaseFromDb(id, user?.uid);
     } catch (err) {
       console.warn('Failed to delete purchase from Firestore (using local state):', err);
+    }
+  };
+
+  const handleSaveInvoice = async (invoice: Invoice) => {
+    setInvoices((prev) => {
+      const exists = prev.some((i) => i.id === invoice.id);
+      if (exists) {
+        return prev.map((i) => (i.id === invoice.id ? invoice : i));
+      }
+      return [invoice, ...prev];
+    });
+    setEditingInvoice(null);
+    try {
+      await addInvoiceToDb(invoice, user?.uid);
+    } catch (err) {
+      console.warn('Failed to sync invoice to Firestore (using local state):', err);
+    }
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setActiveView('create-invoice');
+  };
+
+  const handleDuplicateInvoice = (invoice: Invoice) => {
+    const duplicated: Invoice = {
+      ...invoice,
+      id: `inv-${Date.now()}`,
+      invoiceNumber: `${invoice.invoiceNumber}-COPY`,
+      status: 'draft',
+      issueDate: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    handleSaveInvoice(duplicated);
+  };
+
+  const handleDeleteInvoice = async (id: string) => {
+    setInvoices((prev) => prev.filter((i) => i.id !== id));
+    try {
+      await deleteInvoiceFromDb(id, user?.uid);
+    } catch (err) {
+      console.warn('Failed to delete invoice from Firestore:', err);
+    }
+  };
+
+  const handleUpdateInvoiceStatus = async (id: string, status: InvoiceStatus) => {
+    setInvoices((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, status, updatedAt: new Date().toISOString() } : i))
+    );
+    try {
+      await updateInvoiceInDb(id, { status, updatedAt: new Date().toISOString() }, user?.uid);
+    } catch (err) {
+      console.warn('Failed to update invoice status in Firestore:', err);
     }
   };
 
@@ -318,6 +418,25 @@ export function App() {
                   onSelectPurchase={(item) => setSelectedPurchase(item)}
                   onTriggerClaim={handleTriggerClaim}
                   onTriggerReturn={handleTriggerReturn}
+                />
+              )}
+
+              {activeView === 'invoices' && (
+                <InvoicesView
+                  invoices={invoices}
+                  setActiveView={setActiveView}
+                  onEditInvoice={handleEditInvoice}
+                  onDuplicateInvoice={handleDuplicateInvoice}
+                  onDeleteInvoice={handleDeleteInvoice}
+                  onUpdateStatus={handleUpdateInvoiceStatus}
+                />
+              )}
+
+              {activeView === 'create-invoice' && (
+                <CreateInvoiceView
+                  onSaveInvoice={handleSaveInvoice}
+                  setActiveView={setActiveView}
+                  initialInvoice={editingInvoice}
                 />
               )}
 

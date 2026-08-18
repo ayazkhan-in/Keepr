@@ -23,8 +23,9 @@ import {
   Vault,
   BarChart3,
   Clock,
-  HelpCircle,
   Bot,
+  FileSpreadsheet,
+  FilePlus2,
 } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -65,6 +66,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const navItems = [
     { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchases' as ActiveView, label: 'Purchases', icon: ShoppingBag },
+    { id: 'invoices' as ActiveView, label: 'Invoices', icon: FileSpreadsheet },
+    { id: 'create-invoice' as ActiveView, label: 'Create Invoice', icon: FilePlus2 },
     { id: 'warranties' as ActiveView, label: 'Warranties', icon: ShieldCheck },
     { id: 'returns' as ActiveView, label: 'Returns', icon: RotateCcw, badge: riskCount > 0 ? `${riskCount} Expiring` : undefined },
     { id: 'vault' as ActiveView, label: 'Document Vault', icon: Vault },
