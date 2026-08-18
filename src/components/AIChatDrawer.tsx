@@ -144,7 +144,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+              <Bot className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-medium text-[14px] text-[#0F172A] leading-tight">
