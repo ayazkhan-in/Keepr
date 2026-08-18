@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -55,7 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="hidden md:flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl h-full w-64 p-3.5 shrink-0 z-20 select-none shadow-sm overflow-y-auto">
+    <motion.aside
+      initial={{ opacity: 0, x: -24, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="hidden md:flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl h-full w-64 p-3.5 shrink-0 z-20 select-none shadow-sm overflow-y-auto"
+    >
       {/* Brand Header */}
       <div
         className={`px-3 mb-6 flex items-center justify-between ${onNavigateToLanding ? 'cursor-pointer hover:opacity-85 transition-opacity' : ''}`}
@@ -67,11 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h2 className="font-semibold text-base text-[#0F172A] tracking-tight leading-none flex items-center gap-1.5">
+            <h2 className="font-semibold text-base text-[#0F172A] tracking-tight leading-none">
               Keepr
-              <span className="text-[10px] font-mono-code bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded-full border border-[#E2E8F0] font-medium">
-                AI
-              </span>
             </h2>
             <p className="font-mono-code text-[10px] text-[#76777D] uppercase tracking-wider mt-1">
               Purchase Intelligence
@@ -200,6 +203,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <LogOut className="w-4 h-4" />
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 };

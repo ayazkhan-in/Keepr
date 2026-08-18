@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import {
   RotateCcw,
   AlertTriangle,
@@ -34,18 +35,27 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div>
+      {/* Header with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+      >
         <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
           Return Deadlines
         </h1>
         <p className="text-[13px] text-[#76777D] mt-1">
           Monitor closing return windows and generate one-click merchant refund requests.
         </p>
-      </div>
+      </motion.div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {/* Metric Cards with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-5"
+      >
         <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">
@@ -90,10 +100,15 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
             0 missed return deadlines on record
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Active Return Windows */}
-      <section className="space-y-3">
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+        className="space-y-3"
+      >
         <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
           Active Return Windows
         </h3>
@@ -157,10 +172,15 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Historical / Closed Return Windows */}
-      <section className="space-y-3">
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.15, ease: 'easeOut' }}
+        className="space-y-3"
+      >
         <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
           Closed Return Windows ({closedReturns.length})
         </h3>
@@ -185,7 +205,7 @@ export const ReturnsView: React.FC<ReturnsViewProps> = ({
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };

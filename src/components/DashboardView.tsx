@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Sparkles,
   ArrowRight,
@@ -69,8 +70,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-[#E2E8F0] gap-4">
+      {/* Editorial Header with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-[#E2E8F0] gap-4"
+      >
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
             Intelligence Overview
@@ -88,14 +94,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span>Add Receipt</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Grid: 12 Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left Column (8 cols): Action Center + Spending Bar Chart + Recent Ingestion */}
         <div className="lg:col-span-8 flex flex-col gap-5">
           {/* AI Action Center */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
+            className="bg-white border border-[#E2E8F0] rounded-2xl p-5 relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+          >
             <div className="flex items-center gap-2 mb-3.5">
               <Sparkles className="w-4 h-4 text-[#76777D]" />
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
@@ -173,10 +184,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Spending Trajectory Bar Chart */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+            className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
                 Spending Trajectory
@@ -217,9 +233,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           {bar.amount}
                         </div>
                       )}
-                      <div
-                        style={{ height: bar.height }}
-                        className={`w-full rounded-t-lg transition-all duration-200 ${
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: bar.height }}
+                        transition={{ duration: 0.5, delay: 0.15 + idx * 0.05, ease: 'easeOut' }}
+                        className={`w-full rounded-t-lg transition-colors duration-200 ${
                           isPeak
                             ? 'bg-[#0F172A] hover:bg-[#1E293B]'
                             : isHovered
@@ -241,10 +259,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </span>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Recent Ingestion List */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.45, delay: 0.15, ease: 'easeOut' }}
+            className="bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] overflow-hidden"
+          >
             <div className="p-4 border-b border-[#E2E8F0] flex justify-between items-center bg-[#FAFAFC]">
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
                 Recent Ingestion
@@ -292,13 +315,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Right Column (4 cols): Capital at Risk + Upcoming Deadlines Timeline */}
         <div className="lg:col-span-4 flex flex-col gap-5">
           {/* Capital at Risk Widget */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+            className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+          >
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
                 Capital at Risk
@@ -321,10 +349,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 View Eligible Items ({itemsEligibleForReturn.length})
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Upcoming Deadlines Timeline */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex-1 flex flex-col">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.45, delay: 0.16, ease: 'easeOut' }}
+            className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex-1 flex flex-col"
+          >
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
                 Upcoming Deadlines
@@ -391,7 +424,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

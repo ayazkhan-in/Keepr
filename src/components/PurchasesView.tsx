@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
   Scan,
@@ -98,7 +99,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
     const rows = itemsToExport
       .map(
         (p) =>
-          `"${p.id}","${p.name}","${p.vendor}","${p.category}","${p.purchaseDate}",${p.price},"${p.warranty.expiryDate}","${p.returnWindow.deadlineDate}","${p.serialNumber || ''}"`
+          `"${p.id}","${p.name}","${p.vendor}","${p.category}","${p.purchaseDate}",${p.price},"${p.warranty.expiryDate || 'N/A'}","${p.returnWindow.deadlineDate || 'N/A'}","${p.serialNumber || 'N/A'}"`
       )
       .join('\n');
 
@@ -106,7 +107,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `keepr_purchases_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `keepr_purchases_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -127,8 +128,12 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Header with Export and Scan */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
             Purchases
@@ -153,11 +158,14 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
             <span>Scan Receipt</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Filter and View Mode Controls Bar */}
-      <div className="bg-white border border-[#E2E8F0] p-2.5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-wrap items-center justify-between gap-2.5">
-        {/* Left: View Switcher + Category */}
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
+        className="bg-white border border-[#E2E8F0] p-2.5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-wrap items-center justify-between gap-2.5"
+      >
         <div className="flex items-center gap-3">
           <div className="flex items-center border-r border-[#E2E8F0] pr-2.5 gap-1">
             <button
@@ -246,43 +254,56 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
             <span className="hidden sm:inline">AI Insights</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* AI Insights Banner (when toggled) */}
-      {showAIInsights && (
-        <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl relative ai-border-subtle animate-in fade-in">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-[#0F172A]" />
-            <span className="font-mono-code text-[11px] uppercase tracking-wider text-[#0F172A] font-semibold">
-              Purchase Intelligence Summary
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-[12px] text-[#45464D]">
-            <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
-              <p className="font-semibold text-[#0F172A]">Tax Deductions Identified</p>
-              <p className="mt-0.5 text-[#76777D]">
-                5 hardware items ($7,389.50) marked tax deductible for FY2023.
-              </p>
+      <AnimatePresence>
+        {showAIInsights && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
+            exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl relative ai-border-subtle overflow-hidden"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-[#0F172A]" />
+              <span className="font-mono-code text-[11px] uppercase tracking-wider text-[#0F172A] font-semibold">
+                Purchase Intelligence Summary
+              </span>
             </div>
-            <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
-              <p className="font-semibold text-[#0F172A]">Warranty Coverage Rate</p>
-              <p className="mt-0.5 text-[#76777D]">
-                87.5% of electronic hardware currently protected under valid warranty.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-[12px] text-[#45464D]">
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+                <p className="font-semibold text-[#0F172A]">Tax Deductions Identified</p>
+                <p className="mt-0.5 text-[#76777D]">
+                  5 hardware items ($7,389.50) marked tax deductible for FY2023.
+                </p>
+              </div>
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+                <p className="font-semibold text-[#0F172A]">Warranty Coverage Rate</p>
+                <p className="mt-0.5 text-[#76777D]">
+                  87.5% of electronic hardware currently protected under valid warranty.
+                </p>
+              </div>
+              <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
+                <p className="font-semibold text-[#0F172A]">Return Velocity</p>
+                <p className="mt-0.5 text-[#76777D]">
+                  2 items eligible for full refund within the next 48-72 hours.
+                </p>
+              </div>
             </div>
-            <div className="p-3 bg-white border border-[#E2E8F0] rounded-xl">
-              <p className="font-semibold text-[#0F172A]">Return Velocity</p>
-              <p className="mt-0.5 text-[#76777D]">
-                2 items eligible for full refund within the next 48-72 hours.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* List View Table */}
       {viewMode === 'list' ? (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <motion.div
+          initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+          className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
@@ -487,10 +508,15 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       ) : (
         /* Grid View */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <motion.div
+          initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        >
           {filtered.map((item) => (
             <div
               key={item.id}
@@ -528,7 +554,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <DeleteConfirmationModal

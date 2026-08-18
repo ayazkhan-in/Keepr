@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Mail, User as UserIcon, LogIn, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,8 +17,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
 
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +51,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
@@ -213,7 +225,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </button>
           </form>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Sparkles,
@@ -44,8 +45,6 @@ export const AIClaimModal: React.FC<AIClaimModalProps> = ({
       setGeneratedResult('');
     }
   }, [purchase, isOpen, mode]);
-
-  if (!isOpen || !purchase) return null;
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -108,12 +107,25 @@ export const AIClaimModal: React.FC<AIClaimModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-2xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden animate-in fade-in max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center">
+    <AnimatePresence>
+      {isOpen && purchase && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white rounded-2xl max-w-2xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center">
               {mode === 'warranty_claim' ? (
                 <ShieldCheck className="w-4 h-4" />
               ) : (
@@ -240,7 +252,9 @@ export const AIClaimModal: React.FC<AIClaimModalProps> = ({
             Close
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

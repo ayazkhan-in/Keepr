@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Sparkles,
@@ -54,8 +55,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
-
-  if (!isOpen) return null;
 
   const handleSendMessage = async (promptToSend?: string) => {
     const text = promptToSend || inputPrompt;
@@ -126,9 +125,22 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex justify-end backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white w-full max-w-md h-full shadow-2xl border-l border-[#E2E8F0] flex flex-col justify-between">
-        {/* Drawer Header */}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 bg-black/60 z-50 flex justify-end"
+        >
+          <motion.div
+            initial={{ x: '100%', opacity: 0, filter: 'blur(10px)' }}
+            animate={{ x: 0, opacity: 1, filter: 'blur(0px)' }}
+            exit={{ x: '100%', opacity: 0, filter: 'blur(10px)' }}
+            transition={{ duration: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="bg-white w-full max-w-md h-full shadow-2xl border-l border-[#E2E8F0] flex flex-col justify-between"
+          >
+            {/* Drawer Header */}
         <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center">
@@ -236,7 +248,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </button>
           </form>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

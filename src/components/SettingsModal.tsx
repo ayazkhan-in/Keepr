@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   User,
@@ -22,8 +23,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [warrantyReminders, setWarrantyReminders] = useState('14 days before');
   const [saved, setSaved] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => {
@@ -33,18 +32,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden animate-in fade-in max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
-          <h3 className="font-medium text-[15px] text-[#0F172A]">Keepr Settings</h3>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            {/* Header */}
+            <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
+              <h3 className="font-medium text-[15px] text-[#0F172A]">Keepr Settings</h3>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6 text-[13px]">
@@ -154,7 +166,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <span>{saved ? 'Saved' : 'Save Changes'}</span>
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   ShoppingBag,
@@ -78,8 +79,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     return () => clearTimeout(timer);
   }, [query, purchases]);
 
-  if (!isOpen) return null;
-
   const basicMatches = query
     ? purchases.filter((p) =>
         p.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -144,15 +143,28 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-20 p-4 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden animate-in fade-in">
-        {/* Search Input */}
-        <div className="p-3.5 border-b border-[#E2E8F0] flex items-center gap-3">
-          {isSearchingSemantic ? (
-            <Loader2 className="w-4 h-4 text-[#0F172A] animate-spin" />
-          ) : (
-            <Search className="w-4 h-4 text-[#94A3B8]" />
-          )}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-20 p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -12, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: -12, filter: 'blur(8px)' }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden"
+          >
+            {/* Search Input */}
+            <div className="p-3.5 border-b border-[#E2E8F0] flex items-center gap-3">
+              {isSearchingSemantic ? (
+                <Loader2 className="w-4 h-4 text-[#0F172A] animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 text-[#94A3B8]" />
+              )}
           <input
             type="text"
             value={query}
@@ -261,7 +273,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

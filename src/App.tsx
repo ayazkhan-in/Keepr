@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { DashboardView } from './components/DashboardView';
@@ -32,11 +33,13 @@ type AppRoute = 'landing' | 'auth' | 'app';
 export function App() {
   const { user } = useAuth();
 
-  // Route state: default to 'landing'
+  // Route state: default to 'landing', check pathname first, then fallback to hash
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
-      if (window.location.hash === '#app') return 'app';
-      if (window.location.hash === '#auth') return 'auth';
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/auth' || hash === '#auth') return 'auth';
+      if (path === '/app' || hash === '#app') return 'app';
     }
     return 'landing';
   });
@@ -44,23 +47,28 @@ export function App() {
   const navigateTo = (route: AppRoute) => {
     setCurrentRoute(route);
     if (typeof window !== 'undefined') {
-      if (route === 'landing') {
-        window.history.replaceState(null, '', window.location.pathname);
-      } else {
-        window.history.replaceState(null, '', `#${route}`);
+      const targetPath = route === 'landing' ? '/' : `/${route}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, '', targetPath);
       }
     }
   };
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#app') setCurrentRoute('app');
-      else if (hash === '#auth') setCurrentRoute('auth');
-      else if (hash === '#landing' || hash === '' || hash === '#') setCurrentRoute('landing');
+    const handleRouteChange = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/auth' || hash === '#auth') setCurrentRoute('auth');
+      else if (path === '/app' || hash === '#app') setCurrentRoute('app');
+      else setCurrentRoute('landing');
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
   }, []);
 
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -197,7 +205,10 @@ export function App() {
 
   // ROUTE 3: Main Dashboard App
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98, filter: 'blur(12px)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
       className="flex h-screen w-full text-[#1A1C1D] overflow-hidden font-sans p-3 md:p-3.5 gap-3.5 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
@@ -212,7 +223,12 @@ export function App() {
       />
 
       {/* Main Content Area (Floating Panel) */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] shadow-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+        className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] shadow-sm"
+      >
         {/* Top Bar */}
         <TopBar
           searchQuery={searchQuery}
@@ -229,89 +245,99 @@ export function App() {
           onNavigateToLanding={() => navigateTo('landing')}
         />
 
-        {/* Viewport Screen with smooth scrolling */}
+        {/* Viewport Screen with smooth scrolling & blur transition between tabs */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
-          {activeView === 'dashboard' && (
-            <DashboardView
-              purchases={purchases}
-              actions={actions}
-              setActiveView={setActiveView}
-              openScanner={() => setIsScannerOpen(true)}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onTriggerClaim={handleTriggerClaim}
-              onTriggerReturn={handleTriggerReturn}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -10, filter: 'blur(6px)' }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              {activeView === 'dashboard' && (
+                <DashboardView
+                  purchases={purchases}
+                  actions={actions}
+                  setActiveView={setActiveView}
+                  openScanner={() => setIsScannerOpen(true)}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onTriggerClaim={handleTriggerClaim}
+                  onTriggerReturn={handleTriggerReturn}
+                />
+              )}
 
-          {activeView === 'purchases' && (
-            <PurchasesView
-              purchases={purchases}
-              openScanner={() => setIsScannerOpen(true)}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onDeletePurchase={handleDeletePurchase}
-              onTriggerClaim={handleTriggerClaim}
-              onTriggerReturn={handleTriggerReturn}
-            />
-          )}
+              {activeView === 'purchases' && (
+                <PurchasesView
+                  purchases={purchases}
+                  openScanner={() => setIsScannerOpen(true)}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onDeletePurchase={handleDeletePurchase}
+                  onTriggerClaim={handleTriggerClaim}
+                  onTriggerReturn={handleTriggerReturn}
+                />
+              )}
 
-          {activeView === 'warranties' && (
-            <WarrantiesView
-              purchases={purchases}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onTriggerClaim={handleTriggerClaim}
-              onTriggerReturn={handleTriggerReturn}
-            />
-          )}
+              {activeView === 'warranties' && (
+                <WarrantiesView
+                  purchases={purchases}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onTriggerClaim={handleTriggerClaim}
+                  onTriggerReturn={handleTriggerReturn}
+                />
+              )}
 
-          {activeView === 'returns' && (
-            <ReturnsView
-              purchases={purchases}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onTriggerReturn={handleTriggerReturn}
-            />
-          )}
+              {activeView === 'returns' && (
+                <ReturnsView
+                  purchases={purchases}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onTriggerReturn={handleTriggerReturn}
+                />
+              )}
 
-          {activeView === 'vault' && (
-            <VaultView
-              purchases={purchases}
-              openScanner={() => setIsScannerOpen(true)}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onDeletePurchase={handleDeletePurchase}
-            />
-          )}
+              {activeView === 'vault' && (
+                <VaultView
+                  purchases={purchases}
+                  openScanner={() => setIsScannerOpen(true)}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onDeletePurchase={handleDeletePurchase}
+                />
+              )}
 
-          {activeView === 'analytics' && (
-            <AnalyticsView
-              purchases={purchases}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-            />
-          )}
+              {activeView === 'analytics' && (
+                <AnalyticsView
+                  purchases={purchases}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                />
+              )}
 
-          {activeView === 'timeline' && (
-            <TimelineView
-              purchases={purchases}
-              onSelectPurchase={(item) => setSelectedPurchase(item)}
-              onTriggerClaim={handleTriggerClaim}
-              onTriggerReturn={handleTriggerReturn}
-            />
-          )}
+              {activeView === 'timeline' && (
+                <TimelineView
+                  purchases={purchases}
+                  onSelectPurchase={(item) => setSelectedPurchase(item)}
+                  onTriggerClaim={handleTriggerClaim}
+                  onTriggerReturn={handleTriggerReturn}
+                />
+              )}
 
-          {activeView === 'settings' && (
-            <div className="bg-white border border-[#E2E8F0] rounded-lg p-6 max-w-2xl">
-              <h2 className="text-xl font-semibold text-[#0F172A]">Application Settings</h2>
-              <p className="text-[13px] text-[#76777D] mt-1 mb-6">
-                Manage preferences, default currency, and AI scanning parameters.
-              </p>
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="px-4 py-2 bg-[#0F172A] text-white rounded text-[13px] font-medium"
-              >
-                Open Detailed Preferences
-              </button>
-            </div>
-          )}
+              {activeView === 'settings' && (
+                <div className="bg-white border border-[#E2E8F0] rounded-lg p-6 max-w-2xl">
+                  <h2 className="text-xl font-semibold text-[#0F172A]">Application Settings</h2>
+                  <p className="text-[13px] text-[#76777D] mt-1 mb-6">
+                    Manage preferences, default currency, and AI scanning parameters.
+                  </p>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="px-4 py-2 bg-[#0F172A] text-white rounded text-[13px] font-medium"
+                  >
+                    Open Detailed Preferences
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
-      </div>
+      </motion.div>
 
       {/* Interactive Modals */}
       <ReceiptScannerModal
@@ -365,7 +391,7 @@ export function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
-    </div>
+    </motion.div>
   );
 }
 

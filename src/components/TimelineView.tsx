@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -92,8 +93,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      {/* Header with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
             Purchase & Asset Timeline
@@ -124,10 +130,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Main Timeline Card */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+      {/* Main Timeline Card with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+        className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+      >
         <div className="relative border-l-2 border-[#E2E8F0] ml-4 md:ml-32 space-y-8 pb-4">
           {filteredEvents.map((ev) => {
             const isUrgent = ev.severity === 'urgent';
@@ -215,7 +226,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

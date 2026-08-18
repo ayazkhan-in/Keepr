@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Timer,
   Laptop,
@@ -46,18 +47,27 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div>
+      {/* Page Header with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+      >
         <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
           Warranties & Returns
         </h1>
         <p className="text-[13px] text-[#76777D] mt-1">
           Manage your active guarantees, coverage claims, and return windows.
         </p>
-      </div>
+      </motion.div>
 
       {/* High Priority Action Required Alerts */}
-      <section className="space-y-3">
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
+        className="space-y-3"
+      >
         <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
           Action Required
         </h3>
@@ -131,10 +141,15 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Warranties Table */}
-      <section className="space-y-3">
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+        className="space-y-3"
+      >
         <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-2">
           <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
             Active Warranties ({warrantyItems.length})
@@ -216,10 +231,15 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
             </tbody>
           </table>
         </div>
-      </section>
+      </motion.section>
 
       {/* Visual Interactive 12-Month Timeline */}
-      <section className="space-y-3 pb-6">
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.15, ease: 'easeOut' }}
+        className="space-y-3 pb-6"
+      >
         <div className="flex items-center justify-between">
           <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
             12-Month Expiry Timeline
@@ -283,7 +303,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };

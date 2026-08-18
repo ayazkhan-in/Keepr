@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   TrendingUp,
   Sparkles,
@@ -98,23 +99,22 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           chatHistory: chatMessages.slice(-4),
         }),
       });
-      const data = await res.json();
 
-      const aiMsg: ChatMessage = {
+      const data = await res.json();
+      const assistantMsg: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: data.reply || "I analyzed your purchases and found nothing unexpected.",
+        text: data.reply || "I couldn't process your request at this moment.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        referencedPurchaseIds: data.referencedPurchaseIds,
       };
 
-      setChatMessages((prev) => [...prev, aiMsg]);
+      setChatMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       console.error(err);
       const errorMsg: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: "I couldn't process this request right now. Please try again shortly.",
+        text: "I'm having trouble analyzing your request right now. Please try again.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setChatMessages((prev) => [...prev, errorMsg]);
@@ -125,8 +125,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      {/* Header with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
             Spending & Intelligence
@@ -147,10 +152,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           )}
           <span>{isGeneratingInsights ? 'Refreshing AI...' : 'Refresh Insights'}</span>
         </button>
-      </div>
+      </motion.div>
 
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Metric Cards Grid with Blur Appear */}
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+      >
         <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Total Assets</span>
@@ -198,10 +208,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">100% OCR parsed & stored</p>
         </div>
-      </div>
+      </motion.div>
 
-      {/* AI Insights Section */}
-      <section className="space-y-3">
+      {/* AI Insights Section with Blur Appear */}
+      <motion.section
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+        className="space-y-3"
+      >
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#0F172A]" />
           <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
@@ -230,10 +245,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Category Breakdown & Assistant Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <motion.div
+        initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.45, delay: 0.15, ease: 'easeOut' }}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-5"
+      >
         {/* Left (5 cols): Category Breakdown */}
         <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-between mb-4">
@@ -367,7 +387,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </form>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

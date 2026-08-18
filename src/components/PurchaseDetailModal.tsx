@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   ShieldCheck,
@@ -71,13 +72,24 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
     }
   };
 
-  if (!isOpen || !purchase) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-3xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden animate-in fade-in max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-5 border-b border-[#E2E8F0] flex items-start justify-between bg-[#FAFAFC]">
+    <AnimatePresence>
+      {isOpen && purchase && (
+        <motion.div
+          initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+          exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white rounded-2xl max-w-3xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+          >
+            {/* Header */}
+            <div className="p-5 border-b border-[#E2E8F0] flex items-start justify-between bg-[#FAFAFC]">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-mono-code bg-[#F1F5F9] text-[#475569] px-2.5 py-0.5 rounded-full border border-[#E2E8F0] uppercase">
@@ -448,7 +460,9 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
             Done
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lock,
   Mail,
@@ -72,36 +73,42 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col justify-between relative selection:bg-[#0F172A] selection:text-white"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
-      {/* Ambient Dark Gradient Overlay */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] pointer-events-none" />
-
-      {/* Top Header */}
-      <header className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+      {/* Top Header with Blur Appear */}
+      <motion.header
+        initial={{ opacity: 0, y: -16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between"
+      >
         <button
           onClick={onBackToLanding}
-          className="inline-flex items-center gap-2 text-[13px] font-medium text-white bg-white/15 hover:bg-white/25 border border-white/20 px-4 py-2 rounded-full transition-all shadow-sm backdrop-blur-md cursor-pointer"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-[#0F172A] bg-white/90 hover:bg-white border border-[#E2E8F0] px-4 py-2 rounded-full transition-all shadow-md backdrop-blur-md cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 text-white" />
+          <ArrowLeft className="w-4 h-4 text-[#0F172A]" />
           <span>Back to Overview</span>
         </button>
+      </motion.header>
 
-        <div className="flex items-center gap-2.5 cursor-pointer" onClick={onBackToLanding}>
-          <img src="/abstract.png" alt="Keepr Logo" className="w-8 h-8 object-contain" />
-          <span className="font-heading font-bold text-lg text-white tracking-tight">Keepr</span>
-        </div>
-      </header>
-
-      {/* Main Center Auth Container */}
+      {/* Main Center Auth Container with Blur Appear */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-auto">
-        <div className="w-full max-w-md bg-white/95 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20, filter: 'blur(16px)' }}
+          animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="w-full max-w-md bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8"
+        >
+          {/* Top Logo inside Auth Card */}
+          <div className="flex flex-col items-center justify-center mb-5">
+            <div className="w-14 h-14 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shadow-xs mb-2.5">
+              <img src="/abstract.png" alt="Keepr Logo" className="w-9 h-9 object-contain" />
+            </div>
+            <span className="font-heading font-semibold text-2xl text-[#0F172A] tracking-tight">Keepr</span>
+          </div>
+
           {/* Header text */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-[11px] font-mono-code font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Purchase Intelligence Enclave</span>
-            </div>
-            <h1 className="font-heading font-semibold text-2xl text-[#0F172A] tracking-tight">
-              {mode === 'signin' ? 'Welcome back to Keepr' : 'Create your Keepr account'}
+            <h1 className="font-heading font-semibold text-xl text-[#0F172A] tracking-tight">
+              {mode === 'signin' ? 'Welcome back' : 'Create your account'}
             </h1>
             <p className="text-[13px] text-[#76777D] mt-1">
               {mode === 'signin'
@@ -266,13 +273,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               <ArrowRight className="w-3.5 h-3.5 text-[#76777D]" />
             </button>
           </div>
-        </div>
+        </motion.div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 py-6 text-center text-xs text-white/70">
-        <span>Protected by bank-grade zero-knowledge encryption enclave.</span>
-      </footer>
+      {/* Footer with Blur Appear */}
+      <motion.footer
+        initial={{ opacity: 0, y: 10, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+        className="relative z-10 py-6 text-center text-xs text-[#0F172A]"
+      >
+        <span className="inline-block px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-[#E2E8F0] shadow-xs font-medium">
+          Protected by bank-grade zero-knowledge encryption enclave.
+        </span>
+      </motion.footer>
     </div>
   );
 };
