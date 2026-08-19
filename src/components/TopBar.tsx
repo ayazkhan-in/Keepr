@@ -1,6 +1,32 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Settings, Plus, Scan, Menu, X, ShieldAlert, CheckCircle2, FileText, Sparkles, User as UserIcon, LogOut, LogIn, ExternalLink } from 'lucide-react';
+import {
+  Search,
+  Bell,
+  Settings,
+  Plus,
+  Scan,
+  Menu,
+  X,
+  ShieldAlert,
+  CheckCircle2,
+  FileText,
+  Sparkles,
+  User as UserIcon,
+  LogOut,
+  LogIn,
+  ExternalLink,
+  LayoutDashboard,
+  ShoppingBag,
+  ShieldCheck,
+  RotateCcw,
+  Vault,
+  BarChart3,
+  Clock,
+  Bot,
+  FileSpreadsheet,
+  FilePlus2,
+} from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,35 +62,55 @@ export const TopBar: React.FC<TopBarProps> = ({
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const navItems = [
+    { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'purchases' as ActiveView, label: 'Purchases', icon: ShoppingBag },
+    { id: 'invoices' as ActiveView, label: 'Invoices', icon: FileSpreadsheet },
+    { id: 'create-invoice' as ActiveView, label: 'Create Invoice', icon: FilePlus2 },
+    { id: 'warranties' as ActiveView, label: 'Warranties', icon: ShieldCheck },
+    { id: 'returns' as ActiveView, label: 'Returns', icon: RotateCcw, badge: riskCount > 0 ? `${riskCount} Expiring` : undefined },
+    { id: 'vault' as ActiveView, label: 'Document Vault', icon: Vault },
+    { id: 'analytics' as ActiveView, label: 'Analytics', icon: BarChart3 },
+    { id: 'timeline' as ActiveView, label: 'Timeline', icon: Clock },
+    { id: 'settings' as ActiveView, label: 'Settings', icon: Settings },
+  ];
 
   return (
     <motion.header
       initial={{ opacity: 0, y: -16, filter: 'blur(8px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="bg-[#FFFFFF] border-b border-[#E2E8F0] flex justify-between items-center w-full px-4 md:px-6 h-16 shrink-0 z-30 sticky top-0 rounded-t-2xl"
+      className="bg-[#FFFFFF] border-b border-[#E2E8F0] flex justify-between items-center w-full px-3 sm:px-4 md:px-6 h-14 sm:h-16 shrink-0 z-30 sticky top-0 rounded-t-xl sm:rounded-t-2xl"
     >
-      {/* Left side: Mobile Toggle / Search Input */}
-      <div className="flex items-center gap-4 flex-1">
+      {/* Left side: Mobile Toggle / Brand / Search */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         {/* Mobile menu trigger */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-1.5 text-[#45464D] hover:text-[#0F172A] rounded-md hover:bg-[#F1F5F9]"
+          className="md:hidden p-1.5 text-[#45464D] hover:text-[#0F172A] rounded-lg hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+          aria-label="Toggle navigation"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
 
         {/* Mobile Brand */}
         <div
-          className={`md:hidden flex items-center gap-2 ${onNavigateToLanding ? 'cursor-pointer' : ''}`}
+          className={`md:hidden flex items-center gap-2 shrink-0 ${onNavigateToLanding ? 'cursor-pointer' : ''}`}
           onClick={onNavigateToLanding}
         >
-          <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0 border border-[#E2E8F0] bg-white flex items-center justify-center">
-            <img src="/abstract.png" alt="Keepr Logo" className="w-full h-full object-cover" />
-          </div>
+          <img src="/abstract.png" alt="Keepr Logo" className="w-6 h-6 object-contain" />
           <span className="font-semibold text-base text-[#0F172A] tracking-tight">Keepr</span>
         </div>
+
+        {/* Mobile Search Button */}
+        <button
+          onClick={openCommandPalette}
+          className="md:hidden p-1.5 text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg cursor-pointer transition-colors ml-auto sm:ml-2"
+          aria-label="Search items"
+        >
+          <Search className="w-4 h-4" />
+        </button>
 
         {/* Desktop Global Search */}
         <div className="hidden md:flex items-center w-full max-w-md relative">
@@ -86,32 +132,37 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Right side: Actions */}
-      <div className="flex items-center gap-2.5">
-        {/* Firebase Firestore Status Pill */}
-        <div 
-          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-[11px] font-mono-code text-[#475569]"
-          title={dbConnected ? "Firebase Firestore connected & listening in real-time" : "Firebase operating in local fallback mode"}
-        >
-          <span className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-          <span>{dbConnected ? 'Firestore Live' : 'Offline Cache'}</span>
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Firebase Firestore Status Green Dot with Hover Tooltip */}
+        <div className="relative group flex items-center justify-center cursor-pointer p-1.5">
+          <span
+            className={`w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125 ${
+              dbConnected ? 'bg-emerald-500' : 'bg-amber-500'
+            }`}
+          />
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 bg-[#0F172A] text-white text-[11px] font-mono-code rounded-lg whitespace-nowrap shadow-xl pointer-events-none z-50 animate-in fade-in zoom-in-95 duration-150">
+            <span className={`w-1.5 h-1.5 rounded-full ${dbConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+            <span>{dbConnected ? 'Firestore Connected' : 'Offline Cache'}</span>
+          </div>
         </div>
 
         {/* Ask Keepr AI Assistant */}
         <button
           onClick={openAIChat}
-          className="px-3 py-2 bg-[#F9F9FB] border border-[#E2E8F0] hover:border-[#0F172A] text-[#0F172A] rounded-xl text-[13px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+          className="p-2 sm:px-3 sm:py-2 bg-[#F9F9FB] border border-[#E2E8F0] hover:border-[#0F172A] text-[#0F172A] rounded-xl text-xs sm:text-[13px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
           title="Ask Keepr AI Assistant"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#0F172A]" />
-          <span className="hidden sm:inline">Ask Keepr AI</span>
+          <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#0F172A]" />
+          <span className="hidden sm:inline">Ask AI</span>
         </button>
 
         {/* Add / Scan CTA */}
         <button
           onClick={openScanner}
-          className="px-3.5 py-2 bg-[#0F172A] text-white hover:bg-[#1E293B] rounded-xl text-[13px] font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+          className="p-2 sm:px-3.5 sm:py-2 bg-[#0F172A] text-white hover:bg-[#1E293B] rounded-xl text-xs sm:text-[13px] font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+          title="Scan Receipt"
         >
-          <Scan className="w-3.5 h-3.5" />
+          <Scan className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
           <span className="hidden sm:inline">Add Receipt</span>
         </button>
 
@@ -205,98 +256,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             )}
           </AnimatePresence>
         </div>
-
-        {/* Settings button */}
-        <button
-          onClick={openSettings}
-          className="p-2 text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-xl transition-colors hidden sm:block cursor-pointer"
-          aria-label="Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
-        {/* User profile avatar & Authentication */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || 'User'}
-                className="w-8 h-8 rounded-full border border-slate-300 object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[12px] font-semibold tracking-wider border border-slate-300">
-                {user?.displayName
-                  ? user.displayName.slice(0, 2).toUpperCase()
-                  : user?.email
-                  ? user.email.slice(0, 2).toUpperCase()
-                  : 'KP'}
-              </div>
-            )}
-          </button>
-
-          {/* User Dropdown Menu */}
-          <AnimatePresence>
-            {showUserMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: -8, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, scale: 0.96, y: -8, filter: 'blur(8px)' }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
-              >
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-xs font-semibold text-slate-900 truncate">
-                    {user?.displayName || 'Active Account'}
-                  </p>
-                  <p className="text-[11px] text-slate-500 truncate">{user?.email || 'Protected Enclave'}</p>
-                </div>
-
-                {onNavigateToLanding && (
-                  <button
-                    onClick={() => {
-                      onNavigateToLanding();
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Landing Overview</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => {
-                    openSettings();
-                    setShowUserMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <Settings className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Account Settings</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    logout();
-                    setShowUserMenu(false);
-                    if (onNavigateToLanding) onNavigateToLanding();
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5 text-red-500" />
-                  <span>Sign Out</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Navigation & Actions Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -304,35 +266,120 @@ export const TopBar: React.FC<TopBarProps> = ({
             animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
             exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="md:hidden fixed inset-0 top-16 bg-white z-40 p-4 flex flex-col border-t border-[#E2E8F0] overflow-hidden"
+            className="md:hidden fixed inset-x-0 top-14 sm:top-16 bottom-0 bg-white/95 backdrop-blur-2xl z-40 p-4 flex flex-col border-t border-[#E2E8F0] overflow-y-auto max-h-[calc(100dvh-3.5rem)] shadow-2xl justify-between"
           >
-            <nav className="space-y-2">
-              {[
-                { id: 'dashboard' as ActiveView, label: 'Dashboard' },
-                { id: 'purchases' as ActiveView, label: 'Purchases' },
-                { id: 'warranties' as ActiveView, label: 'Warranties' },
-                { id: 'returns' as ActiveView, label: 'Returns' },
-                { id: 'vault' as ActiveView, label: 'Document Vault' },
-                { id: 'analytics' as ActiveView, label: 'Analytics' },
-                { id: 'timeline' as ActiveView, label: 'Timeline' },
-                { id: 'settings' as ActiveView, label: 'Settings' },
-              ].map((tab) => (
+            {/* Nav items list */}
+            <div className="space-y-1">
+              <p className="px-3 py-1 text-[11px] font-mono-code uppercase tracking-wider text-[#94A3B8] font-semibold">
+                Workspace Views
+              </p>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveView(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[#0F172A] text-white shadow-xs'
+                        : 'text-[#45464D] hover:bg-[#F9F9FB] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#76777D]'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span
+                        className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-red-50 text-red-600 border border-red-200'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Actions & Account */}
+            <div className="pt-4 mt-4 border-t border-[#E2E8F0] space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  key={tab.id}
                   onClick={() => {
-                    setActiveView(tab.id);
+                    openScanner();
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium ${
-                    activeView === tab.id
-                      ? 'bg-[#F1F5F9] text-[#0F172A]'
-                      : 'text-[#45464D] hover:bg-[#F9F9FB]'
-                  }`}
+                  className="py-2.5 px-3 bg-[#0F172A] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
-                  {tab.label}
+                  <Scan className="w-3.5 h-3.5" />
+                  <span>Scan Receipt</span>
                 </button>
-              ))}
-            </nav>
+                <button
+                  onClick={() => {
+                    openAIChat();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2.5 px-3 bg-[#F9F9FB] border border-[#E2E8F0] text-[#0F172A] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer hover:bg-[#F1F5F9]"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#0F172A]" />
+                  <span>Ask AI</span>
+                </button>
+              </div>
+
+              {onNavigateToLanding && (
+                <button
+                  onClick={() => {
+                    onNavigateToLanding();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2 px-3 text-xs text-[#76777D] hover:text-[#0F172A] hover:bg-[#F9F9FB] rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Back to Landing Overview</span>
+                </button>
+              )}
+
+              {/* User capsule */}
+              <div className="flex items-center justify-between p-2.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl mt-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {user?.displayName
+                      ? user.displayName.slice(0, 2).toUpperCase()
+                      : user?.email
+                      ? user.email.slice(0, 2).toUpperCase()
+                      : 'KP'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-[#0F172A] truncate">
+                      {user?.displayName || 'User Account'}
+                    </p>
+                    <p className="text-[10px] text-[#76777D] font-mono-code truncate">
+                      {user?.email || 'Protected Enclave'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                    if (onNavigateToLanding) onNavigateToLanding();
+                  }}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

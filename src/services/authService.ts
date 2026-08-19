@@ -5,9 +5,16 @@ import {
   updateProfile,
   signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
   User
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+
+// Ensure Firebase Auth session is persisted across browser reloads & sessions
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn('Firebase auth persistence setting error:', err);
+});
 
 export async function loginWithGoogle(): Promise<User> {
   try {

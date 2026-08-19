@@ -92,4 +92,70 @@ export type ActiveView =
   | 'vault'
   | 'analytics'
   | 'timeline'
+  | 'create-invoice'
+  | 'invoices'
   | 'settings';
+
+export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate?: number; // e.g. 10 for 10%
+  discount?: number; // e.g. 5 for 5%
+  amount: number; // total after tax/discount calculation
+}
+
+export interface InvoiceParty {
+  name: string;
+  companyName?: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  taxId?: string; // VAT / GST / EIN
+  logoUrl?: string;
+}
+
+export interface InvoicePaymentDetails {
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  routingNumber?: string; // Swift / IFSC / Routing
+  paypalEmail?: string;
+  upiId?: string;
+  paymentLink?: string;
+  qrCodeData?: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string; // e.g. INV-2026-001
+  issueDate: string; // YYYY-MM-DD
+  dueDate: string; // YYYY-MM-DD
+  status: InvoiceStatus;
+  currency: string; // USD, EUR, GBP, INR, etc.
+  sender: InvoiceParty;
+  client: InvoiceParty;
+  items: InvoiceItem[];
+  subtotal: number;
+  taxTotal: number;
+  discountTotal: number;
+  shippingFee?: number;
+  grandTotal: number;
+  amountPaid: number;
+  balanceDue: number;
+  notes?: string;
+  paymentTerms?: string; // e.g. "Net 30", "Due on Receipt"
+  paymentDetails?: InvoicePaymentDetails;
+  pdfUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  userId?: string;
+}
+

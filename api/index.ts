@@ -1,15 +1,10 @@
 import express from 'express';
-import path from 'path';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
-import cron from 'node-cron';
-import { sendWarrantyExpiryAlert } from './src/services/warrantyEmailService';
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -17,7 +12,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const PRIMARY_GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
 
-// Lazy initialize GoogleGenAI with aistudio-build user agent
+// Lazy initialize GoogleGenAI
 let aiClient: GoogleGenAI | null = null;
 let currentKey: string | null = null;
 
@@ -764,70 +759,5 @@ Identify which purchase IDs semantically match the user's intent. Return JSON wi
   }
 });
 
-// 9. LangChain + Resend Automated Warranty Expiration Email Alert Endpoint
-app.post('/api/warranty/send-alert', async (req, res) => {
-  try {
-    const { purchase, recipientEmail = 'khanasifshamshul@gmail.com', daysLeft } = req.body;
-
-    if (!purchase) {
-      // Fallback sample item for testing if no item is provided
-      const sampleItem = {
-        id: 'pur-sample-alert',
-        name: 'MacBook Pro 16" M3 Max (1TB SSD, 36GB RAM)',
-        vendor: 'Apple Store',
-        category: 'Electronics',
-        price: 3499.00,
-        currency: 'USD',
-        purchaseDate: '2023-11-01',
-        serialNumber: 'APL-MBP16-992184',
-        warranty: {
-          hasWarranty: true,
-          expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          provider: 'AppleCare+ Coverage',
-          terms: 'Unlimited hardware repair for accidental damage, battery health drop below 80%, and logic board defects.',
-        },
-        returnWindow: { hasReturn: false, deadlineDate: '2023-11-15' },
-        taxDeductible: true,
-        tags: ['Apple', 'Hardware'],
-        documents: [],
-      };
-
-      const result = await sendWarrantyExpiryAlert(sampleItem as any, recipientEmail, daysLeft);
-      return res.json(result);
-    }
-
-    const result = await sendWarrantyExpiryAlert(purchase, recipientEmail, daysLeft);
-    return res.json(result);
-  } catch (error: any) {
-    console.error('Error in warranty send-alert route:', error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Daily Automated Background Cron Job (Runs every day at 09:00 AM)
-cron.schedule('0 9 * * *', () => {
-  console.log('[Keepr Warranty Intelligence] Running daily automated warranty expiry scan...');
-});
-
-// Vite middleware & Static Serving
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Keepr server listening on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+export { app };
+export default app;

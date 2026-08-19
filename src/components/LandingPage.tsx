@@ -24,6 +24,8 @@ import {
   Laptop,
   Smartphone,
   Zap,
+  Menu,
+  X,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -35,6 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateToAuth,
   onNavigateToApp,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState<'scanner' | 'warranties' | 'returns' | 'vault'>('scanner');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
 
@@ -77,14 +80,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
         className="sticky top-0 z-40 bg-[#F8F9FA]/95 backdrop-blur-md border-b border-[#E2E8F0]/80"
       >
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-3.5 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo */}
           <div
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <img src="/abstract.png" alt="Keepr Logo" className="w-9 h-9 object-contain" />
-            <span className="font-heading font-semibold text-xl text-[#0F172A] tracking-tight">Keepr</span>
+            <img src="/abstract.png" alt="Keepr Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
+            <span className="font-heading font-semibold text-lg sm:text-xl text-[#0F172A] tracking-tight">Keepr</span>
           </div>
 
           {/* Desktop Center Links */}
@@ -122,15 +125,70 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onNavigateToAuth}
-              className="text-[13px] font-semibold text-white bg-[#0F172A] hover:bg-[#1E293B] px-5 py-2 rounded-full transition-all cursor-pointer shadow-xs"
+              className="text-xs sm:text-[13px] font-semibold text-white bg-[#0F172A] hover:bg-[#1E293B] px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full transition-all cursor-pointer shadow-xs"
             >
               Log in
             </button>
+
+            {/* Mobile menu trigger */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-[#45464D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-xl transition-colors cursor-pointer"
+              aria-label="Toggle Navigation Menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
+              exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="md:hidden bg-white/95 backdrop-blur-xl border-b border-[#E2E8F0] px-4 py-3.5 space-y-2 shadow-lg overflow-hidden"
+            >
+              <nav className="flex flex-col space-y-1">
+                {[
+                  { label: 'Home', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+                  { label: 'About Keepr', action: () => scrollToSection('about') },
+                  { label: 'Platform Features', action: () => scrollToSection('features') },
+                  { label: 'Interactive Showcase', action: () => scrollToSection('showcase') },
+                  { label: '3-Step Setup', action: () => scrollToSection('services') },
+                  { label: 'FAQ', action: () => scrollToSection('faq') },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      item.action();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left px-3.5 py-2 rounded-xl text-sm font-medium text-[#45464D] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <div className="pt-2 border-t border-[#E2E8F0] flex gap-2">
+                  <button
+                    onClick={() => {
+                      onNavigateToAuth();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2.5 text-center text-xs font-semibold text-white bg-[#0F172A] hover:bg-[#1E293B] rounded-xl transition-all shadow-xs"
+                  >
+                    Launch Workspace
+                  </button>
+                </div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.header>
 
       {/* Main Container - Symmetrical Equal Gaps on All 4 Sides for Hero & Viewport Height Fit */}
@@ -351,14 +409,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Feature 1 */}
               <motion.div
                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
               >
                 <div>
-                  <Scan className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                  <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                  <Scan className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                  <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                     Multimodal AI Parsing
                   </h3>
-                  <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                  <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                     Every invoice, store receipt, and warranty contract is analyzed for product models, serials, and tax deductions.
                   </p>
                 </div>
@@ -367,14 +425,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Feature 2 */}
               <motion.div
                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
               >
                 <div>
-                  <ShieldCheck className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                  <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                  <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                  <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                     Autonomous Warranty Tracker
                   </h3>
-                  <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                  <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                     Continuous tracking of limited manufacturer warranties, extended AppleCare, and third-party coverage terms.
                   </p>
                 </div>
@@ -383,14 +441,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Feature 3 */}
               <motion.div
                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
               >
                 <div>
-                  <Timer className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                  <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                  <Timer className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                  <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                     Return Window Safeguard
                   </h3>
-                  <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                  <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                     Live countdown timers alert you 7 days, 3 days, and 24 hours before retailer refund windows shut down.
                   </p>
                 </div>
@@ -403,14 +461,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Feature 4 */}
                 <motion.div
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                  className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                  className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
                 >
                   <div>
-                    <FileText className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                    <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                    <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                    <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                       One-Click Claim Filing
                     </h3>
-                    <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                    <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                       Instant creation of formal, evidence-backed merchant refund emails and warranty claim drafts with attached proof.
                     </p>
                   </div>
@@ -419,14 +477,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Feature 5 */}
                 <motion.div
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                  className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                  className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
                 >
                   <div>
-                    <Layers className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                    <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                    <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                    <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                       Layered Vault Security
                     </h3>
-                    <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                    <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                       Zero-knowledge encryption and cloud sync safeguard the complete privacy and safety of every original PDF receipt.
                     </p>
                   </div>
@@ -435,14 +493,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Feature 6 */}
                 <motion.div
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                  className="p-8 sm:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
+                  className="p-5 sm:p-8 md:p-10 flex flex-col justify-between hover:bg-[#FAFAFC] transition-colors group"
                 >
                   <div>
-                    <DollarSign className="w-8 h-8 text-[#059669] mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
-                    <h3 className="font-heading font-medium text-lg text-[#0F172A]">
+                    <DollarSign className="w-7 h-7 sm:w-8 sm:h-8 text-[#059669] mb-4 sm:mb-5 group-hover:scale-105 transition-transform" strokeWidth={1.75} />
+                    <h3 className="font-heading font-medium text-base sm:text-lg text-[#0F172A]">
                       Tax Deductions & Analytics
                     </h3>
-                    <p className="text-[13px] text-[#76777D] mt-2.5 leading-relaxed">
+                    <p className="text-[13px] text-[#76777D] mt-2 sm:mt-2.5 leading-relaxed">
                       Automated classification of business equipment versus personal expenses with single-click Schedule C export.
                     </p>
                   </div>
@@ -459,20 +517,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="space-y-8"
+          className="space-y-6 sm:space-y-8"
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <span className="font-mono-code text-[11px] uppercase tracking-wider text-[#059669] font-semibold">
                 Live Interface
               </span>
-              <h2 className="font-heading text-3xl sm:text-4xl font-normal text-[#0F172A] tracking-tight mt-1">
+              <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-normal text-[#0F172A] tracking-tight mt-1">
                 Explore the Keepr Workspace
               </h2>
             </div>
 
             {/* Tab switchers */}
-            <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] p-1.5 rounded-2xl shadow-2xs overflow-x-auto">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white border border-[#E2E8F0] p-1 sm:p-1.5 rounded-2xl shadow-2xs overflow-x-auto max-w-full">
               {[
                 { id: 'scanner', label: 'AI Scanner' },
                 { id: 'warranties', label: 'Warranty Matrix' },
@@ -482,7 +540,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActivePreviewTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-xl text-[12px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-[12px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activePreviewTab === tab.id
                       ? 'bg-[#0F172A] text-white shadow-xs'
                       : 'text-[#45464D] hover:bg-[#F8F9FA]'
@@ -495,7 +553,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Interactive UI Card Display with AnimatePresence & Blur Transition */}
-          <div className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-10 shadow-sm min-h-[360px] flex items-center">
+          <div className="bg-white rounded-3xl border border-[#E2E8F0] p-4 sm:p-8 md:p-10 shadow-sm min-h-[340px] flex items-center">
             <AnimatePresence mode="wait">
               {activePreviewTab === 'scanner' && (
                 <motion.div

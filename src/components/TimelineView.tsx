@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface TimelineViewProps {
   purchases: PurchaseItem[];
@@ -25,6 +26,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice } = useCurrency();
   const [selectedEventType, setSelectedEventType] = useState<'all' | 'returns' | 'warranties' | 'purchases'>('all');
 
   // Build unified chronological timeline events
@@ -47,7 +49,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       title: `Purchased ${p.name}`,
       type: 'purchase',
       item: p,
-      description: `${p.vendor} · $${p.price.toFixed(2)}`,
+      description: `${p.vendor} · ${formatPrice(p.price)}`,
       badge: 'Acquisition',
       severity: 'normal',
     });
@@ -185,7 +187,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     </div>
 
                     <span className="font-mono-code text-[13px] font-semibold text-[#0F172A]">
-                      ${ev.item.price.toFixed(2)}
+                      {formatPrice(ev.item.price)}
                     </span>
                   </div>
 

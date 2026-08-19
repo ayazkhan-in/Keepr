@@ -9,20 +9,49 @@ import {
   CreditCard,
   Database,
   Check,
+  Coins,
 } from 'lucide-react';
+import { useCurrency, SupportedCurrency } from '../context/CurrencyContext';
+import { MinimalSelect } from './ui/MinimalSelect';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const CURRENCY_OPTIONS = [
+  { value: 'INR', label: 'INR (₹) · Indian Rupee' },
+  { value: 'USD', label: 'USD ($) · US Dollar' },
+  { value: 'EUR', label: 'EUR (€) · Euro' },
+  { value: 'GBP', label: 'GBP (£) · British Pound' },
+  { value: 'CAD', label: 'CAD ($) · Canadian Dollar' },
+  { value: 'AUD', label: 'AUD ($) · Australian Dollar' },
+  { value: 'JPY', label: 'JPY (¥) · Japanese Yen' },
+];
+
+const REMINDER_OPTIONS = [
+  { value: '3 days before', label: '3 days before deadline' },
+  { value: '5 days before', label: '5 days before deadline' },
+  { value: '7 days before', label: '7 days before deadline' },
+  { value: '14 days before', label: '14 days before deadline' },
+  { value: '30 days (1 month) before', label: '30 days (1 month) before deadline' },
+];
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const [currency, setCurrency] = useState('USD ($)');
+  const { currency, setCurrency } = useCurrency();
+  const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency>(currency);
   const [emailAlerts, setEmailAlerts] = useState(true);
-  const [returnReminders, setReturnReminders] = useState('3 days before');
-  const [warrantyReminders, setWarrantyReminders] = useState('14 days before');
+  const [returnReminders, setReturnReminders] = useState(() => {
+    try {
+      const savedBuffer = localStorage.getItem('keepr_reminder_buffer');
+      if (savedBuffer) return savedBuffer;
+    } catch (e) {
+      console.error(e);
+    }
+    return '30 days (1 month) before';
+  });
   const [saved, setSaved] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [testEmailAddress, setTestEmailAddress] = useState('khanasifshamshul@gmail.com');
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
   const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
 
@@ -44,7 +73,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       });
       const data = await res.json();
       if (data.success) {
-        setTestEmailStatus(`✅ Email sent to ${testEmailAddress.trim()} via Resend!`);
+        setTestEmailStatus(`✅ Email sent to ${testEmailAddress.trim()} via Nodemailer SMTP!`);
       } else {
         setTestEmailStatus(`❌ ${data.error || 'Failed to send'}`);
       }
@@ -56,11 +85,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const handleSave = () => {
+    setCurrency(selectedCurrency);
+    try {
+      localStorage.setItem('keepr_reminder_buffer', returnReminders);
+    } catch (e) {
+      console.error(e);
+    }
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
       onClose();
-    }, 800);
+    }, 600);
   };
 
   return (
@@ -76,12 +111,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             initial={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, scale: 0.95, y: 16, filter: 'blur(8px)' }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="bg-white rounded-2xl max-w-xl w-full border border-[#E2E8F0] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="bg-white rounded-2xl max-w-lg w-full border border-[#E2E8F0] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
           >
             {/* Header */}
             <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#FAFAFC]">
-              <h3 className="font-medium text-[15px] text-[#0F172A]">Keepr Settings</h3>
+              <h3 className="font-semibold text-[15px] text-[#0F172A]">Keepr Settings</h3>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
@@ -90,77 +125,79 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               </button>
             </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6 text-[13px]">
-          {/* Account Profile */}
-          <div className="space-y-3">
-            <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
-              Profile & Organization
-            </h4>
-            <div className="flex items-center gap-3 p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-semibold text-sm">
-                AM
-              </div>
-              <div>
-                <p className="font-medium text-[#0F172A]">Alex Morgan</p>
-                <p className="text-[12px] text-[#76777D]">alex@keepr.ai · Executive Tier</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Currency & Financial Preferences */}
-          <div className="space-y-3">
-            <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
-              Financial Defaults
-            </h4>
-            <div>
-              <label className="block text-[#45464D] mb-1.5 font-medium">Default Display Currency</label>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl text-[#0F172A]"
-              >
-                <option>USD ($)</option>
-                <option>EUR (€)</option>
-                <option>GBP (£)</option>
-                <option>CAD ($)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Notification Deadlines */}
-          <div className="space-y-3">
-            <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
-              Alerts & Deadlines
-            </h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
-                <div>
-                  <p className="font-medium text-[#0F172A]">Email & In-App Alerts</p>
-                  <p className="text-[12px] text-[#76777D]">Receive daily digests on closing return windows</p>
+            {/* Content */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6 text-[13px]">
+              {/* Account Profile */}
+              <div className="space-y-3">
+                <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
+                  Profile & Organization
+                </h4>
+                <div className="flex items-center gap-3 p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-semibold text-sm">
+                    KP
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#0F172A]">Workspace Enclave</p>
+                    <p className="text-[12px] text-[#76777D]">Protected Purchase & Invoice Data</p>
+                  </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={emailAlerts}
-                  onChange={(e) => setEmailAlerts(e.target.checked)}
-                  className="rounded-md border-[#CBD5E1] text-[#0F172A] focus:ring-0 w-4 h-4 cursor-pointer"
-                />
               </div>
 
-              <div>
-                <label className="block text-[#45464D] mb-1.5 font-medium">Return Window Alert Buffer</label>
-                <select
-                  value={returnReminders}
-                  onChange={(e) => setReturnReminders(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl text-[#0F172A]"
-                >
-                  <option>3 days before</option>
-                  <option>5 days before</option>
-                  <option>7 days before</option>
-                </select>
+              {/* Currency & Financial Preferences */}
+              <div className="space-y-3">
+                <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-[#0F172A]" />
+                  Financial Defaults & Regional Currency
+                </h4>
+                <div className="p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl space-y-2">
+                  <label className="block text-[#45464D] text-xs font-medium">
+                    Default Workspace Display Currency
+                  </label>
+                  <MinimalSelect
+                    value={selectedCurrency}
+                    onChange={(val) => setSelectedCurrency(val as SupportedCurrency)}
+                    options={CURRENCY_OPTIONS}
+                    fullWidth
+                  />
+                  <p className="text-[11px] text-[#76777D]">
+                    All dashboard totals, invoices, expenses, and analytics will format in {selectedCurrency}.
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
+
+              {/* Notification Deadlines */}
+              <div className="space-y-3">
+                <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-[#0F172A]" />
+                  Alerts & Deadlines
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
+                    <div>
+                      <p className="font-medium text-[#0F172A]">Email & In-App Alerts</p>
+                      <p className="text-[12px] text-[#76777D]">Receive digests on closing return windows & warranty expiries</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={emailAlerts}
+                      onChange={(e) => setEmailAlerts(e.target.checked)}
+                      className="rounded-md border-[#CBD5E1] text-[#0F172A] focus:ring-0 w-4 h-4 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl space-y-2">
+                    <label className="block text-[#45464D] text-xs font-medium">
+                      Warranty & Return Expiry Alert Buffer
+                    </label>
+                    <MinimalSelect
+                      value={returnReminders}
+                      onChange={(val) => setReturnReminders(val)}
+                      options={REMINDER_OPTIONS}
+                      fullWidth
+                    />
+                  </div>
+                </div>
+              </div>
 
           {/* AI Ingestion Engine */}
           <div className="space-y-2">
@@ -181,15 +218,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* LangChain + Resend Email Intelligence */}
+          {/* LangChain + Nodemailer Email Intelligence */}
           <div className="space-y-2">
             <h4 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
-              LangChain & Resend Email Alerts
+              LangChain & Nodemailer SMTP Email Alerts
             </h4>
             <div className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-3">
               <div>
                 <p className="font-medium text-[#0F172A] text-xs">Automated Expiry Email Engine</p>
-                <p className="text-[11px] text-[#76777D]">Powered by LangChain LLM & Resend Transactional Email</p>
+                <p className="text-[11px] text-[#76777D]">Powered by LangChain LLM & Nodemailer SMTP Transport</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -197,7 +234,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   type="email"
                   value={testEmailAddress}
                   onChange={(e) => setTestEmailAddress(e.target.value)}
-                  placeholder="Enter your email address..."
+                  placeholder="Enter recipient email address..."
                   className="flex-1 px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-xs text-[#0F172A] focus:outline-none focus:border-[#0F172A]"
                 />
                 <button
@@ -222,22 +259,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[#E2E8F0] flex justify-end items-center gap-2 bg-white">
-          <button
-            onClick={onClose}
-            className="px-3.5 py-2 text-[12px] font-medium text-[#45464D] hover:bg-[#F9F9FB] rounded-xl cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-[#0F172A] text-white text-[12px] font-medium rounded-xl hover:bg-[#1E293B] flex items-center gap-1 cursor-pointer"
-          >
-            {saved ? <Check className="w-3.5 h-3.5" /> : null}
-            <span>{saved ? 'Saved' : 'Save Changes'}</span>
-          </button>
-        </div>
+            {/* Footer */}
+            <div className="p-4 border-t border-[#E2E8F0] flex justify-end items-center gap-2 bg-white">
+              <button
+                onClick={onClose}
+                className="px-3.5 py-2 text-[12px] font-medium text-[#45464D] hover:bg-[#F9F9FB] rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-[#0F172A] text-white text-[12px] font-medium rounded-xl hover:bg-[#1E293B] flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                {saved ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : null}
+                <span>{saved ? 'Saved!' : 'Save Preferences'}</span>
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       )}

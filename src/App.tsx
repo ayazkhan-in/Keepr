@@ -16,22 +16,32 @@ import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/SettingsModal';
 import { AIChatDrawer } from './components/AIChatDrawer';
 import { AuthModal } from './components/AuthModal';
+import { CreateInvoiceView } from './components/CreateInvoiceView';
+import { InvoicesView } from './components/InvoicesView';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { useAuth } from './context/AuthContext';
-import { ActiveView, PurchaseItem, AIActionItem } from './types';
+import { ActiveView, PurchaseItem, AIActionItem, Invoice, InvoiceStatus } from './types';
 import { INITIAL_PURCHASES, INITIAL_ACTIONS } from './data/mockData';
+import { INITIAL_INVOICES } from './data/mockInvoices';
 import {
   subscribePurchases,
   addPurchaseToDb,
   deletePurchaseFromDb,
   seedPurchasesIfEmpty
 } from './services/purchaseService';
+import {
+  subscribeInvoices,
+  addInvoiceToDb,
+  updateInvoiceInDb,
+  deleteInvoiceFromDb,
+  seedInvoicesIfEmpty
+} from './services/invoiceService';
 
 type AppRoute = 'landing' | 'auth' | 'app';
 
 export function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   // Route state: default to 'landing', check pathname first, then fallback to hash
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
@@ -71,6 +81,18 @@ export function App() {
     };
   }, []);
 
+  // Remember sign-in session: automatically restore app route when authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      if (currentRoute !== 'app') {
+        setCurrentRoute('app');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/app') {
+          window.history.replaceState(null, '', '/app');
+        }
+      }
+    }
+  }, [user, loading]);
+
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [purchases, setPurchases] = useState<PurchaseItem[]>(() => {
     try {
@@ -81,6 +103,17 @@ export function App() {
     }
     return INITIAL_PURCHASES;
   });
+
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const saved = localStorage.getItem('keepr_invoices_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_INVOICES;
+  });
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   const [actions, setActions] = useState<AIActionItem[]>(INITIAL_ACTIONS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,8 +139,9 @@ export function App() {
   useEffect(() => {
     const userId = user?.uid;
     seedPurchasesIfEmpty(INITIAL_PURCHASES, userId);
+    seedInvoicesIfEmpty(INITIAL_INVOICES, userId);
 
-    const unsubscribe = subscribePurchases(
+    const unsubscribePurchases = subscribePurchases(
       (items) => {
         if (items && items.length > 0) {
           setPurchases(items);
@@ -120,7 +154,22 @@ export function App() {
       userId
     );
 
-    return () => unsubscribe();
+    const unsubscribeInvoices = subscribeInvoices(
+      (items) => {
+        if (items && items.length > 0) {
+          setInvoices(items);
+        }
+      },
+      (err) => {
+        console.warn('Invoices sync error:', err);
+      },
+      userId
+    );
+
+    return () => {
+      unsubscribePurchases();
+      unsubscribeInvoices();
+    };
   }, [user?.uid]);
 
   // Persist purchases locally as fallback cache
@@ -131,6 +180,15 @@ export function App() {
       console.error(e);
     }
   }, [purchases]);
+
+  // Persist invoices locally as fallback cache
+  useEffect(() => {
+    try {
+      localStorage.setItem('keepr_invoices_v1', JSON.stringify(invoices));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [invoices]);
 
   // Global keyboard shortcut for Command Palette
   useEffect(() => {
@@ -152,18 +210,36 @@ export function App() {
       console.warn('Failed to sync new purchase to Firestore (using local state):', err);
     }
 
-    // Automatically send an instant email alert if product has a warranty or return deadline
+    // Automatically send an instant email alert if product has a deadline within user preference threshold
     if (newPurchase.warranty?.hasWarranty || newPurchase.returnWindow?.hasReturn) {
       try {
-        const recipientEmail = user?.email || 'onboarding@resend.dev';
-        fetch('/api/warranty/send-alert', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            purchase: newPurchase,
-            recipientEmail: recipientEmail,
-          }),
-        }).catch((e) => console.warn('Instant warranty/return email alert notice:', e.message));
+        const expiryStr = newPurchase.warranty?.expiryDate || newPurchase.returnWindow?.deadlineDate;
+        let actualDaysLeft = 30;
+        if (expiryStr) {
+          const expiryDate = new Date(expiryStr);
+          const diffMs = expiryDate.getTime() - Date.now();
+          actualDaysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        }
+
+        // Get saved reminder threshold from Settings (default 30 days / 1 month)
+        const savedBufferText = localStorage.getItem('keepr_reminder_buffer') || '30 days';
+        const bufferDays = parseInt(savedBufferText, 10) || 30;
+
+        // Only dispatch alert if product is within the user's alert preference window
+        if (actualDaysLeft <= bufferDays) {
+          const recipientEmail = user?.email || 'khanasifshamshul@gmail.com';
+          fetch('/api/warranty/send-alert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              purchase: newPurchase,
+              recipientEmail: recipientEmail,
+              daysLeft: actualDaysLeft,
+            }),
+          }).catch((e) => console.warn('Instant warranty/return email alert notice:', e.message));
+        } else {
+          console.log(`[Keepr Alert System] Item added with ${actualDaysLeft} days remaining. Exceeds current alert threshold (${bufferDays} days). Alert scheduled for threshold.`);
+        }
       } catch (e) {
         console.warn('Failed to trigger instant email:', e);
       }
@@ -176,6 +252,60 @@ export function App() {
       await deletePurchaseFromDb(id, user?.uid);
     } catch (err) {
       console.warn('Failed to delete purchase from Firestore (using local state):', err);
+    }
+  };
+
+  const handleSaveInvoice = async (invoice: Invoice) => {
+    setInvoices((prev) => {
+      const exists = prev.some((i) => i.id === invoice.id);
+      if (exists) {
+        return prev.map((i) => (i.id === invoice.id ? invoice : i));
+      }
+      return [invoice, ...prev];
+    });
+    setEditingInvoice(null);
+    try {
+      await addInvoiceToDb(invoice, user?.uid);
+    } catch (err) {
+      console.warn('Failed to sync invoice to Firestore (using local state):', err);
+    }
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setActiveView('create-invoice');
+  };
+
+  const handleDuplicateInvoice = (invoice: Invoice) => {
+    const duplicated: Invoice = {
+      ...invoice,
+      id: `inv-${Date.now()}`,
+      invoiceNumber: `${invoice.invoiceNumber}-COPY`,
+      status: 'draft',
+      issueDate: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    handleSaveInvoice(duplicated);
+  };
+
+  const handleDeleteInvoice = async (id: string) => {
+    setInvoices((prev) => prev.filter((i) => i.id !== id));
+    try {
+      await deleteInvoiceFromDb(id, user?.uid);
+    } catch (err) {
+      console.warn('Failed to delete invoice from Firestore:', err);
+    }
+  };
+
+  const handleUpdateInvoiceStatus = async (id: string, status: InvoiceStatus) => {
+    setInvoices((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, status, updatedAt: new Date().toISOString() } : i))
+    );
+    try {
+      await updateInvoiceInDb(id, { status, updatedAt: new Date().toISOString() }, user?.uid);
+    } catch (err) {
+      console.warn('Failed to update invoice status in Firestore:', err);
     }
   };
 
@@ -199,6 +329,18 @@ export function App() {
   const riskCount = purchases.filter(
     (p) => p.returnWindow.hasReturn && p.returnWindow.status === 'expiring_soon'
   ).length;
+
+  // ROUTE 0: Auth Loading State (Restoring Saved Session)
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#0F172A] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          <p className="font-mono-code text-xs text-slate-400">Authenticating Keepr Session...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ROUTE 1: Landing Page (Default)
   if (currentRoute === 'landing') {
@@ -226,7 +368,7 @@ export function App() {
       initial={{ opacity: 0, scale: 0.98, filter: 'blur(12px)' }}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="flex h-screen w-full text-[#1A1C1D] overflow-hidden font-sans p-3 md:p-3.5 gap-3.5 bg-cover bg-center bg-no-repeat"
+      className="flex h-[100dvh] w-full text-[#1A1C1D] overflow-hidden font-sans p-1.5 sm:p-2.5 md:p-3.5 gap-2 md:gap-3.5 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
       {/* Floating Left Sidebar */}
@@ -235,6 +377,7 @@ export function App() {
         setActiveView={setActiveView}
         riskCount={riskCount}
         openScanner={() => setIsScannerOpen(true)}
+        openSettings={() => setIsSettingsOpen(true)}
         openAuthModal={() => setIsAuthModalOpen(true)}
         onNavigateToLanding={() => navigateTo('landing')}
       />
@@ -244,7 +387,7 @@ export function App() {
         initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
-        className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] shadow-sm"
+        className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white rounded-xl sm:rounded-2xl border border-[#E2E8F0] shadow-sm"
       >
         {/* Top Bar */}
         <TopBar
@@ -263,7 +406,7 @@ export function App() {
         />
 
         {/* Viewport Screen with smooth scrolling & blur transition between tabs */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-7 max-w-7xl w-full mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeView}
@@ -334,6 +477,25 @@ export function App() {
                   onSelectPurchase={(item) => setSelectedPurchase(item)}
                   onTriggerClaim={handleTriggerClaim}
                   onTriggerReturn={handleTriggerReturn}
+                />
+              )}
+
+              {activeView === 'invoices' && (
+                <InvoicesView
+                  invoices={invoices}
+                  setActiveView={setActiveView}
+                  onEditInvoice={handleEditInvoice}
+                  onDuplicateInvoice={handleDuplicateInvoice}
+                  onDeleteInvoice={handleDeleteInvoice}
+                  onUpdateStatus={handleUpdateInvoiceStatus}
+                />
+              )}
+
+              {activeView === 'create-invoice' && (
+                <CreateInvoiceView
+                  onSaveInvoice={handleSaveInvoice}
+                  setActiveView={setActiveView}
+                  initialInvoice={editingInvoice}
                 />
               )}
 

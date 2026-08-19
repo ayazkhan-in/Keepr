@@ -15,6 +15,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { PurchaseItem, AIActionItem, ActiveView } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
+import { MinimalSelect } from './ui/MinimalSelect';
 
 interface DashboardViewProps {
   purchases: PurchaseItem[];
@@ -35,6 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice, formatCompact, currencySymbol } = useCurrency();
   const [spendingRange, setSpendingRange] = useState<'30days' | 'year'>('30days');
   const [hoveredBar, setHoveredBar] = useState<number | null>(3); // Default Thu active
 
@@ -44,15 +47,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   );
   const capitalAtRisk = itemsEligibleForReturn.reduce((sum, item) => sum + item.price, 0);
 
-  // Bar data for 30 days
+  // Bar data dynamically using currency
   const barData = [
-    { day: 'Mon', height: '32%', amount: '$1,200', active: false },
-    { day: 'Tue', height: '48%', amount: '$1,850', active: false },
-    { day: 'Wed', height: '22%', amount: '$820', active: false },
-    { day: 'Thu', height: '82%', amount: '$3,499', active: true },
-    { day: 'Fri', height: '60%', amount: '$2,350', active: false },
-    { day: 'Sat', height: '52%', amount: '$1,940', active: false },
-    { day: 'Sun', height: '36%', amount: '$1,450', active: false },
+    { day: 'Mon', height: '32%', rawAmount: 1200, active: false },
+    { day: 'Tue', height: '48%', rawAmount: 1850, active: false },
+    { day: 'Wed', height: '22%', rawAmount: 820, active: false },
+    { day: 'Thu', height: '82%', rawAmount: 3499, active: true },
+    { day: 'Fri', height: '60%', rawAmount: 2350, active: false },
+    { day: 'Sat', height: '52%', rawAmount: 1940, active: false },
+    { day: 'Sun', height: '36%', rawAmount: 1450, active: false },
   ];
 
   const getCategoryIcon = (category: string) => {
@@ -82,13 +85,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Intelligence Overview
           </h1>
           <p className="text-[13px] text-[#76777D] mt-1 font-normal">
-            Here is the current state of your managed assets.
+            Here is the current state of your managed assets and expenditure.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={openScanner}
-            className="px-3.5 py-2 bg-[#0F172A] text-white rounded-md text-[13px] font-medium hover:bg-[#1E293B] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
+            className="px-3.5 py-2 bg-[#0F172A] text-white rounded-xl text-[13px] font-medium hover:bg-[#1E293B] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Receipt</span>
@@ -130,7 +133,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       Return window closing for MacBook Pro
                     </p>
                     <p className="text-[12px] text-[#76777D]">
-                      Deadline in 3 days. Initiate return now to secure $3,499.00.
+                      Deadline in 3 days. Initiate return now to secure {formatPrice(3499)}.
                     </p>
                   </div>
                 </div>
@@ -197,22 +200,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h3 className="font-mono-code text-[11px] text-[#76777D] uppercase tracking-wider font-semibold">
                 Spending Trajectory
               </h3>
-              <select
+              <MinimalSelect
                 value={spendingRange}
-                onChange={(e) => setSpendingRange(e.target.value as any)}
-                className="text-[12px] bg-transparent border-none text-[#76777D] py-0 pr-6 focus:ring-0 cursor-pointer font-medium"
-              >
-                <option value="30days">Last 30 Days</option>
-                <option value="year">This Year</option>
-              </select>
+                onChange={(val) => setSpendingRange(val as any)}
+                options={[
+                  { value: '30days', label: 'Last 30 Days' },
+                  { value: 'year', label: 'This Year' },
+                ]}
+                size="sm"
+              />
             </div>
 
             {/* Minimalist Grayscale Bar Chart */}
             <div className="h-44 flex items-end justify-between gap-2 pt-4 border-b border-[#E2E8F0] pb-2 relative">
               {/* Y-Axis Labels */}
               <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[10px] text-[#94A3B8] font-mono-code pointer-events-none pb-2">
-                <span>$5k</span>
-                <span>$2.5k</span>
+                <span>{formatCompact(5000)}</span>
+                <span>{formatCompact(2500)}</span>
                 <span>0</span>
               </div>
 
@@ -230,7 +234,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       {/* Tooltip */}
                       {isHovered && (
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#0F172A] text-white text-[11px] font-mono-code py-0.5 px-2.5 rounded-full pointer-events-none whitespace-nowrap z-20 shadow-xs">
-                          {bar.amount}
+                          {formatPrice(bar.rawAmount)}
                         </div>
                       )}
                       <motion.div
@@ -299,8 +303,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono-code text-[13px] font-medium text-[#0F172A]">
-                      ${p.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <p className="font-mono-code text-[13px] font-semibold text-[#0F172A]">
+                      {formatPrice(p.price)}
                     </p>
                     {p.warranty.hasWarranty ? (
                       <span className="inline-block px-2 py-0.5 mt-1 bg-[#F1F5F9] text-[#475569] text-[10px] uppercase font-mono-code rounded-full border border-[#E2E8F0]">
@@ -335,7 +339,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div className="mt-3">
               <p className="text-3xl md:text-4xl text-[#0F172A] font-semibold tracking-tighter leading-none font-mono-code">
-                ${capitalAtRisk.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {formatPrice(capitalAtRisk)}
               </p>
               <p className="text-[12px] text-[#76777D] mt-2 leading-relaxed">
                 Value of items eligible for return or exchange within the next 14 days.

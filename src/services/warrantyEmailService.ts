@@ -1,16 +1,30 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { GoogleGenAI } from '@google/genai';
 import { PurchaseItem } from '../types';
 
-let resendClient: Resend | null = null;
-function getResend(): Resend | null {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  if (!resendClient) {
-    resendClient = new Resend(apiKey);
-  }
-  return resendClient;
+/**
+ * Creates and returns a Nodemailer SMTP transporter using configuration from environment variables.
+ */
+function createTransporter() {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = process.env.SMTP_USER || 'khanasifshamshul@gmail.com';
+  const pass = process.env.SMTP_PASS || '';
+
+  // If password is not configured yet, use Nodemailer with standard settings
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // true for 465, false for 587 / other ports
+    auth: {
+      user,
+      pass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
 }
 
 /**
@@ -40,28 +54,29 @@ Design & Email Structure Requirements:
 `);
 
 /**
- * Generate a custom HTML email via LangChain PromptTemplate & Google AI Studio, then send via Resend.
+ * Generate a custom HTML email via LangChain PromptTemplate & Google AI Studio, then send via Nodemailer SMTP.
  */
 export async function sendWarrantyExpiryAlert(
   purchase: PurchaseItem,
-  recipientEmail: string = 'onboarding@resend.dev',
+  recipientEmail: string = 'khanasifshamshul@gmail.com',
   customDaysLeft?: number
 ): Promise<{ success: boolean; emailId?: string; error?: string; message?: string }> {
   try {
-    const resend = getResend();
-    if (!resend) {
-      return {
-        success: false,
-        error: 'RESEND_API_KEY is not configured in .env file.',
-      };
-    }
-
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
     
-    // Calculate days left
-    const expiry = new Date(purchase.warranty?.expiryDate || Date.now());
-    const diffTime = expiry.getTime() - Date.now();
-    const daysLeft = customDaysLeft ?? Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    // Calculate actual real days remaining
+    let daysLeft = customDaysLeft;
+    if (daysLeft === undefined || daysLeft === null) {
+      const expiryStr = purchase.warranty?.expiryDate || purchase.returnWindow?.deadlineDate;
+      if (expiryStr) {
+        const expiryDate = new Date(expiryStr);
+        const now = new Date();
+        const diffTime = expiryDate.getTime() - now.getTime();
+        daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      } else {
+        daysLeft = 30;
+      }
+    }
 
     let htmlContent = '';
 
@@ -88,10 +103,10 @@ export async function sendWarrantyExpiryAlert(
         });
 
         const tryModels = [
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.0-flash'
-];
+          'gemini-3.1-flash-lite',
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+        ];
         let responseText = '';
 
         for (const m of tryModels) {
@@ -122,7 +137,7 @@ export async function sendWarrantyExpiryAlert(
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; background-color: #ffffff;">
           <div style="background-color: #0F172A; color: #ffffff; padding: 24px; text-align: center;">
-            <h2 style="margin: 0; font-size: 20px; font-weight: 6-00;">Warranty Expiration Notice</h2>
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Warranty Expiration Notice</h2>
             <p style="margin: 6px 0 0 0; font-size: 13px; color: #94A3B8;">Keepr Asset & Protection Intelligence</p>
           </div>
           <div style="padding: 24px; color: #334155; font-size: 14px; line-height: 1.6;">
@@ -141,32 +156,28 @@ export async function sendWarrantyExpiryAlert(
       `;
     }
 
-    // Send email via Resend
-    const resendResponse = await resend.emails.send({
-      from: 'Keepr Warranty Alerts <onboarding@resend.dev>',
-      to: [recipientEmail],
+    const transporter = createTransporter();
+    const fromAddress = process.env.SMTP_FROM || `"Keepr Warranty Intelligence" <${process.env.SMTP_USER || 'khanasifshamshul@gmail.com'}>`;
+
+    const mailOptions = {
+      from: fromAddress,
+      to: recipientEmail,
       subject: `🚨 Warranty Expiring Soon (${daysLeft} Days Remaining): ${purchase.name}`,
       html: htmlContent,
-    });
+    };
 
-    if (resendResponse.error) {
-      console.error('[Resend Error]:', resendResponse.error);
-      return {
-        success: false,
-        error: resendResponse.error.message || 'Failed to send email via Resend',
-      };
-    }
+    const info = await transporter.sendMail(mailOptions);
 
     return {
       success: true,
-      emailId: resendResponse.data?.id,
-      message: `Warranty alert email successfully sent via Resend (ID: ${resendResponse.data?.id})`,
+      emailId: info.messageId,
+      message: `Warranty alert email successfully sent via Nodemailer SMTP (ID: ${info.messageId})`,
     };
   } catch (error: any) {
-    console.error('Error sending warranty expiry email:', error);
+    console.error('Error sending warranty expiry email via Nodemailer:', error);
     return {
       success: false,
-      error: error.message || 'Error executing warranty email service',
+      error: error.message || 'Error executing Nodemailer SMTP email service',
     };
   }
 }

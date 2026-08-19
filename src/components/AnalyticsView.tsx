@@ -13,9 +13,11 @@ import {
   Bot,
   User,
   RefreshCw,
+  Coins,
 } from 'lucide-react';
 import { PurchaseItem, SpendingInsight, ChatMessage } from '../types';
 import { INITIAL_CHAT, INITIAL_INSIGHTS } from '../data/mockData';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface AnalyticsViewProps {
   purchases: PurchaseItem[];
@@ -26,6 +28,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   purchases,
   onSelectPurchase,
 }) => {
+  const { formatPrice, currencySymbol } = useCurrency();
   const [insights, setInsights] = useState<SpendingInsight[]>(INITIAL_INSIGHTS);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
@@ -36,6 +39,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const totalSpend = purchases.reduce((acc, p) => acc + p.price, 0);
   const taxDeductibleSpend = purchases
     .filter((p) => p.taxDeductible)
+    .reduce((acc, p) => acc + p.price, 0);
+
+  const protectedValue = purchases
+    .filter((p) => p.warranty.hasWarranty)
     .reduce((acc, p) => acc + p.price, 0);
 
   // Group by category
@@ -130,10 +137,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         initial={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-[#E2E8F0]"
       >
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight">
+          <div className="flex items-center gap-2">
+            <span className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
+              Telemetry & Analytics
+            </span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#0F172A] tracking-tight mt-0.5">
             Spending & Intelligence
           </h1>
           <p className="text-[13px] text-[#76777D] mt-1">
@@ -143,7 +155,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         <button
           onClick={handleGenerateInsights}
           disabled={isGeneratingInsights}
-          className="flex items-center gap-1.5 bg-white border border-[#E2E8F0] px-3.5 py-1.5 rounded-md text-[12px] font-medium text-[#0F172A] hover:bg-[#F9F9FB] shadow-2xs cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 bg-white border border-[#E2E8F0] px-3.5 py-2 rounded-xl text-[12px] font-medium text-[#0F172A] hover:bg-[#F9F9FB] shadow-2xs cursor-pointer transition-colors"
         >
           {isGeneratingInsights ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -159,51 +171,51 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.45, delay: 0.05, ease: 'easeOut' }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Total Assets</span>
-            <DollarSign className="w-4 h-4 text-[#94A3B8]" />
+            <Coins className="w-4 h-4 text-[#94A3B8]" />
           </div>
-          <p className="font-mono-code text-2xl font-semibold text-[#0F172A] mt-2">
-            ${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <p className="font-mono-code text-2xl font-bold text-[#0F172A] mt-2">
+            {formatPrice(totalSpend)}
           </p>
           <p className="text-[11px] text-[#10B981] mt-1 flex items-center gap-1 font-medium">
-            <ArrowUpRight className="w-3 h-3" /> +12% vs last month
+            <ArrowUpRight className="w-3 h-3" /> Active Portfolio
           </p>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Tax Deductible</span>
             <span className="font-mono-code text-[10px] bg-[#ECFDF5] text-[#065F46] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
-              68.2%
+              {totalSpend > 0 ? `${Math.round((taxDeductibleSpend / totalSpend) * 100)}%` : '0%'}
             </span>
           </div>
-          <p className="font-mono-code text-2xl font-semibold text-[#0F172A] mt-2">
-            ${taxDeductibleSpend.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <p className="font-mono-code text-2xl font-bold text-[#0F172A] mt-2">
+            {formatPrice(taxDeductibleSpend)}
           </p>
-          <p className="text-[11px] text-[#76777D] mt-1">Ready for Schedule C export</p>
+          <p className="text-[11px] text-[#76777D] mt-1">Ready for business write-off export</p>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Protected Value</span>
             <ShieldCheck className="w-4 h-4 text-[#10B981]" />
           </div>
-          <p className="font-mono-code text-2xl font-semibold text-[#0F172A] mt-2">
-            $9,346.99
+          <p className="font-mono-code text-2xl font-bold text-[#0F172A] mt-2">
+            {formatPrice(protectedValue)}
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">Active warranty coverage</p>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs">
           <div className="flex justify-between items-center text-[#76777D] mb-1">
             <span className="font-mono-code text-[11px] uppercase font-semibold">Tracked Items</span>
             <span className="font-mono-code text-[11px] text-[#76777D]">Total</span>
           </div>
-          <p className="font-mono-code text-2xl font-semibold text-[#0F172A] mt-2">
+          <p className="font-mono-code text-2xl font-bold text-[#0F172A] mt-2">
             {purchases.length} Items
           </p>
           <p className="text-[11px] text-[#76777D] mt-1">100% OCR parsed & stored</p>
@@ -224,11 +236,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {insights.map((ins, idx) => (
             <div
               key={ins.id || idx}
-              className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between"
+              className="bg-white border border-[#E2E8F0] p-5 rounded-2xl shadow-2xs flex flex-col justify-between"
             >
               <div>
                 <span className="font-mono-code text-[10px] text-[#76777D] uppercase font-semibold">
@@ -255,7 +267,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         className="grid grid-cols-1 lg:grid-cols-12 gap-5"
       >
         {/* Left (5 cols): Category Breakdown */}
-        <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+        <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-2xs">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-mono-code text-[11px] uppercase tracking-wider text-[#76777D] font-semibold">
               Category Distribution
@@ -265,16 +277,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
           <div className="space-y-4">
             {categoryEntries.map(([category, amount]) => {
-              const pct = Math.round((amount / totalSpend) * 100);
+              const pct = Math.round((amount / (totalSpend || 1)) * 100);
               return (
                 <div key={category} className="space-y-1.5">
                   <div className="flex justify-between text-[12px]">
                     <span className="font-medium text-[#0F172A]">{category}</span>
                     <span className="font-mono-code text-[#76777D]">
-                      ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ({pct}%)
+                      {formatPrice(amount)} ({pct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-[#F1F5F9] h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden">
                     <div
                       className="bg-[#0F172A] h-full rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
@@ -287,7 +299,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </div>
 
         {/* Right (7 cols): Ask Keepr AI Interactive Chat Assistant */}
-        <div className="lg:col-span-7 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-[420px]">
+        <div className="lg:col-span-7 bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-2xs flex flex-col justify-between min-h-[420px]">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] mb-3">
               <div className="flex items-center gap-2">
@@ -295,7 +307,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <h3 className="font-medium text-[13px] text-[#0F172A]">Ask Keepr Assistant</h3>
               </div>
               <span className="font-mono-code text-[10px] text-[#10B981] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#A7F3D0]">
-                Gemini 3.7 Online
+                Gemini 3.1 Online
               </span>
             </div>
 

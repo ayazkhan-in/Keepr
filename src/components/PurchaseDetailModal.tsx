@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface PurchaseDetailModalProps {
   purchase: PurchaseItem | null;
@@ -41,6 +42,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice } = useCurrency();
   const [activeTab, setActiveTab] = useState<'overview' | 'valuation' | 'warranty' | 'return' | 'documents'>('overview');
   const [valuationData, setValuationData] = useState<any>(null);
   const [isValuating, setIsValuating] = useState<boolean>(false);
@@ -169,7 +171,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                 <div className="p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
                   <span className="text-[10px] font-mono-code text-[#76777D] uppercase">Amount</span>
                   <p className="text-lg font-semibold font-mono-code text-[#0F172A] mt-0.5">
-                    ${purchase.price.toFixed(2)}
+                    {formatPrice(purchase.price)}
                   </p>
                 </div>
                 <div className="p-3.5 bg-[#F9F9FB] border border-[#E2E8F0] rounded-xl">
@@ -254,10 +256,10 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
                         Current Estimated Value
                       </span>
                       <p className="text-2xl font-bold font-mono-code text-[#0F172A] mt-1">
-                        ${valuationData.estimatedCurrentValue?.toLocaleString() || '0'}
+                        {formatPrice(valuationData.estimatedCurrentValue || 0)}
                       </p>
                       <p className="text-[11px] text-[#76777D] mt-0.5">
-                        Original: ${purchase.price.toFixed(2)}
+                        Original: {formatPrice(purchase.price)}
                       </p>
                     </div>
 

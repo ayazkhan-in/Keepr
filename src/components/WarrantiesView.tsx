@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { PurchaseItem } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface WarrantiesViewProps {
   purchases: PurchaseItem[];
@@ -28,6 +29,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
   onTriggerClaim,
   onTriggerReturn,
 }) => {
+  const { formatPrice } = useCurrency();
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [alertingItemId, setAlertingItemId] = useState<string | null>(null);
   const [toastNotice, setToastNotice] = useState<string | null>(null);
@@ -111,7 +113,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-[14px] font-medium text-[#0F172A]">Sony WH-1000XM5</h4>
-                  <p className="text-[12px] text-[#76777D]">Amazon Purchase · $398.00</p>
+                  <p className="text-[12px] text-[#76777D]">Amazon Purchase · {formatPrice(398)}</p>
                 </div>
               </div>
               <span className="bg-[#FEE2E2] text-[#991B1B] font-mono-code text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-[#FECACA]">
@@ -145,7 +147,7 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-[14px] font-medium text-[#0F172A]">Breville Barista Pro</h4>
-                  <p className="text-[12px] text-[#76777D]">Williams Sonoma · $899.95</p>
+                  <p className="text-[12px] text-[#76777D]">Williams Sonoma · {formatPrice(899.95)}</p>
                 </div>
               </div>
               <span className="bg-[#F1F5F9] text-[#475569] font-mono-code text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-[#E2E8F0]">
@@ -196,7 +198,8 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
         </div>
 
         <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-[#FAFAFC] border-b border-[#E2E8F0]">
               <tr>
                 <th className="font-mono-code text-[11px] text-[#76777D] uppercase py-3 px-4 font-semibold">
@@ -282,7 +285,8 @@ export const WarrantiesView: React.FC<WarrantiesViewProps> = ({
             </tbody>
           </table>
         </div>
-      </motion.section>
+      </div>
+    </motion.section>
 
       {/* Visual Interactive 12-Month Timeline */}
       <motion.section

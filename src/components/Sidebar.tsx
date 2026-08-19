@@ -14,6 +14,9 @@ import {
   LogIn,
   LogOut,
   Globe,
+  User as UserIcon,
+  FileSpreadsheet,
+  FilePlus2,
 } from 'lucide-react';
 import { ActiveView } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +26,7 @@ interface SidebarProps {
   setActiveView: (view: ActiveView) => void;
   riskCount: number;
   openScanner: () => void;
+  openSettings?: () => void;
   openAuthModal?: () => void;
   onNavigateToLanding?: () => void;
 }
@@ -32,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveView,
   riskCount,
   openScanner,
+  openSettings,
   openAuthModal,
   onNavigateToLanding,
 }) => {
@@ -39,6 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard' as ActiveView, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchases' as ActiveView, label: 'Purchases', icon: ShoppingBag },
+    { id: 'invoices' as ActiveView, label: 'Invoices', icon: FileSpreadsheet },
+    { id: 'create-invoice' as ActiveView, label: 'Create Invoice', icon: FilePlus2 },
     {
       id: 'warranties' as ActiveView,
       label: 'Warranties',
@@ -142,17 +149,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Landing Overview</span>
           </button>
         )}
-        <button
-          onClick={() => setActiveView('settings')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-            activeView === 'settings'
-              ? 'bg-[#F1F5F9] text-[#0F172A]'
-              : 'text-[#45464D] hover:text-[#0F172A] hover:bg-[#F9F9FB]'
-          }`}
-        >
-          <Settings className="w-4 h-4 text-[#76777D]" />
-          <span>Settings</span>
-        </button>
         <a
           href="https://ai.google.dev"
           target="_blank"
@@ -167,21 +163,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* User profile capsule */}
       <div className="mt-3 pt-3 border-t border-[#E2E8F0] flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user.displayName || 'User'}
-              className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
-              {user?.displayName
-                ? user.displayName.slice(0, 2).toUpperCase()
-                : user?.email
-                ? user.email.slice(0, 2).toUpperCase()
-                : 'KP'}
-            </div>
-          )}
+          <div className="w-8 h-8 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-semibold shrink-0 shadow-2xs overflow-hidden border border-[#E2E8F0] relative">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : user?.displayName ? (
+              <span>{user.displayName.slice(0, 2).toUpperCase()}</span>
+            ) : (
+              <UserIcon className="w-4 h-4 text-white/90" />
+            )}
+          </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[12px] font-medium text-[#0F172A] leading-none truncate">
               {user?.displayName || 'Active Account'}
@@ -192,16 +189,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            logout();
-            if (onNavigateToLanding) onNavigateToLanding();
-          }}
-          className="p-1.5 text-[#76777D] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-          title="Sign Out"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => {
+              if (openSettings) {
+                openSettings();
+              } else {
+                setActiveView('settings');
+              }
+            }}
+            className="p-1.5 text-[#76777D] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => {
+              logout();
+              if (onNavigateToLanding) onNavigateToLanding();
+            }}
+            className="p-1.5 text-[#76777D] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </motion.aside>
   );
